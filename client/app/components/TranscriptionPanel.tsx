@@ -1,0 +1,102 @@
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRightLeft, Volume2, Waves } from "lucide-react";
+
+interface TranscriptionPanelProps {
+  transcription: string;
+  onTranscriptionChange: (value: string) => void;
+  isRecording?: boolean;
+}
+
+export function TranscriptionPanel({
+  transcription,
+  onTranscriptionChange,
+  isRecording = false,
+}: TranscriptionPanelProps) {
+  // Color variables (customize these hex codes as needed)
+  const colors = {
+    primary: "#3b82f6", // Blue-500
+    secondary: "#000000", // Black
+    accent: "#10b981", // Emerald-500 (for recording)
+    badge: "#6366f1", // Indigo-500
+    iconBg: "#4f46e5", // Indigo-600
+    danger: "#ef4444", // Red-500 (for recording indicator)
+  };
+
+  const sampleTranscription = `Doctor: How are you feeling today?
+Patient: My stomach hurts badly, doctor. I've been vomiting blood.
+Doctor: I see. Any other symptoms?
+Patient: Yes, black stools and dizziness.`;
+
+  return (
+    <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: colors.iconBg }}
+          >
+            <ArrowRightLeft className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">
+            Live Transcription
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isRecording && (
+            <Badge
+              variant="outline"
+              className="gap-1.5"
+              style={{
+                color: colors.danger,
+                borderColor: `${colors.danger}20`,
+              }}
+            >
+              <Waves className="h-3 w-3" />
+              Recording
+            </Badge>
+          )}
+          <Badge
+            variant="outline"
+            className="gap-1.5"
+            style={{
+              color: colors.badge,
+              borderColor: `${colors.badge}20`,
+            }}
+          >
+            <Volume2 className="h-3 w-3" />
+            Auto-detect
+          </Badge>
+        </div>
+      </div>
+
+      <div className="relative">
+        <Textarea
+          value={transcription || sampleTranscription}
+          onChange={(e) => onTranscriptionChange(e.target.value)}
+          className="h-80 resize-none font-mono text-sm bg-background/50 border-border/50 focus:ring-2 transition-all duration-300"
+          style={{
+            borderColor: `${colors.primary}50`,
+          }}
+          placeholder="Patient conversation will appear here automatically..."
+        />
+
+        {isRecording && (
+          <div className="absolute bottom-4 right-4">
+            <div
+              className="flex items-center gap-2 text-xs bg-background/80 px-2 py-1 rounded-md backdrop-blur-sm"
+              style={{ color: colors.danger }}
+            >
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: colors.danger }}
+              />
+              <span>Listening...</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
