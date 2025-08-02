@@ -13,3 +13,15 @@ resource "aws_s3_bucket_public_access_block" "clinic_scribe_bucket" {
   block_public_policy     = true
   restrict_public_buckets = true
 }
+
+resource "aws_s3_bucket_cors_configuration" "clinic_scribe_cors" {
+  bucket = aws_s3_bucket.clinic_scribe_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
