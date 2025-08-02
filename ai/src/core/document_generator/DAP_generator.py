@@ -1,16 +1,12 @@
-from langchain_community.llms import Ollama
-from langchain.prompts import ChatPromptTemplate
+from core.model.model import llm
 import json
-import transcript_sample
 
 
-def generate_soap(transcript):
-    llm = Ollama(model="mistral")  # Try "meditron" for medical focus
-
+def generate_DAP(transcript):
     prompt = """
     [INST] <<SYS>>
-    You are a medical scribe. Convert this doctor-patient conversation into a SOAP note in JSON format.
-    The JSON should have these keys: "subjective", "objective", "assessment", "plan".
+    You are a medical scribe. Convert this doctor-patient conversation into a DAP note in JSON format.
+    The JSON should have these keys: "data", "assessment", "plan".
     Return ONLY the JSON object, nothing else.
     <</SYS>>
 
@@ -19,8 +15,7 @@ def generate_soap(transcript):
 
     **Structured Output:**
     {{
-        "subjective": "patient's complaints here",
-        "objective": "doctor's findings here",
+        "data": "patient's complaints here",
         "assessment": "diagnosis here",
         "plan": "next steps here"
     }}[/INST]
@@ -36,17 +31,8 @@ def generate_soap(transcript):
         # If parsing fails, return a default structure with the raw response
         return {
             "subjective": "Unable to parse response",
-            "objective": "",
+            "data": "",
             "assessment": "",
             "plan": "",
             "raw_response": response,
         }
-
-
-# Example usage
-transcript = transcript_sample.transcript1
-
-soap_note = generate_soap(transcript)
-
-print("--- SOAP Note (JSON) ---")
-print(json.dumps(soap_note, indent=2))

@@ -19,15 +19,6 @@ def fast_transcribe(audio_file, model_size="tiny"):
         start = segment["start"]
         end = segment["end"]
         text = segment["text"].strip()
-        transcript.append(f"{start:.1f}s - {end:.1f}s: {text}")
+        transcript.append(f"{text}")
 
     return "\n".join(transcript), elapsed
-
-
-# Usage
-audio_file = "test.wav"
-transcript, time_taken = fast_transcribe(
-    audio_file, model_size="base"
-)  # Try "small" for speed
-print(f"Transcription time: {time_taken:.1f}s\n")
-print(transcript)
