@@ -3,13 +3,11 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export class S3Service {
 
-
-
     private static s3Client = new S3Client({
-        region: "us-east-1", // Replace with your region
+        region: "us-east-1",
         credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID! || "",
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY! || "",
         },
     });
 
@@ -20,7 +18,7 @@ export class S3Service {
     }
 
 
-    static async uploadFile(body: Buffer | string): Promise<void> {
+    static async uploadFile(body: Buffer | string): Promise<string> {
         const key = this.generateRandomS3BucketName();
         const command = new PutObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -30,8 +28,10 @@ export class S3Service {
         });
 
         try {
+            console.log(`Uploading file to S3: ${process.env.AWS_S3_BUCKET_NAME}/${key}`);
             await this.s3Client.send(command);
             console.log(`File uploaded successfully to ${process.env.AWS_S3_BUCKET_NAME}/${key}`);
+            return key;
         } catch (error) {
             console.error("Error uploading file:", error);
             throw error;
