@@ -11,44 +11,6 @@ import {
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <FaStethoscope className="text-blue-600 text-2xl" />
-          <span className="text-xl font-bold text-blue-800">
-            ClinicScribe AI
-          </span>
-        </div>
-        <div className="hidden md:flex space-x-8">
-          <Link href="#features" className="text-gray-600 hover:text-blue-600">
-            Features
-          </Link>
-          <Link
-            href="#how-it-works"
-            className="text-gray-600 hover:text-blue-600"
-          >
-            How It Works
-          </Link>
-          <Link href="#pricing" className="text-gray-600 hover:text-blue-600">
-            Pricing
-          </Link>
-        </div>
-        <div className="flex space-x-4">
-          <Link
-            href="/login"
-            className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
-          >
-            Log In
-          </Link>
-          <Link
-            href="/signup"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Sign Up
-          </Link>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="py-20 px-6 bg-gradient-to-r from-blue-50 to-white">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center">

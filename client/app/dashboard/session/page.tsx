@@ -1,55 +1,43 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ModernSidebar } from "@/components/ModernSidebar";
 import { MedicalHeader } from "@/components/MedicalHeader";
 import { TranscriptionPanel } from "@/components/TranscriptionPanel";
 import { DocumentationPanel } from "@/components/DocumentationPanel";
 import { AIAssistant } from "@/components/AIAssistant";
+import { generateDocument } from "./action";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<"soap" | "referral" | "summary">(
-    "soap"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "soap" | "referral" | "summary" | "dap"
+  >("soap");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [transcription, setTranscription] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
-
-  const sampleSOAP = `Subjective:
-- Reports severe abdominal pain
-- Vomiting blood x 2 days
-- Black stools
-- Dizziness and lightheadedness
-
-Objective:
-- Pale complexion
-- Tachycardia (HR 110)
-- Hypotension (90/60)
-- Abdominal tenderness on palpation
-
-Assessment:
-- Suspected upper GI bleed
-- Rule out gastric ulcer vs varices
-
-Plan:
-- CBC, LFTs, coagulation panel
-- Urgent endoscopy
-- IV fluids and PPI
-- Counsel on alcohol cessation`;
-
-  const handleGenerate = () => {
-    setGeneratedDoc(
-      activeTab === "soap"
-        ? sampleSOAP
-        : activeTab === "referral"
-        ? "Referral Letter\n\nDear Colleague,\n\nI am referring this patient for urgent gastroenterological evaluation for suspected upper GI bleeding.\n\nThank you for your prompt attention.\n\nBest regards,\nDr. Smith"
-        : "Clinical Summary\n\nPatient presents with acute upper GI bleeding requiring immediate intervention. Hemodynamically stable but requires monitoring and endoscopic evaluation."
-    );
-  };
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [genrating, setGenrating] = useState(false);
 
   const toggleRecording = () => {
     setIsRecording(!isRecording);
   };
+
+  useEffect(() => {
+    console.log(selectedDocument);
+    if (selectedDocument) {
+      generateDocument({
+        transcript: transcription,
+        document_type: selectedDocument,
+      })
+        .then((doc) => {
+          setGeneratedDoc(doc);
+          setGenrating(false);
+        })
+        .catch((error) => {
+          console.error("Error generating document:", error);
+        });
+    }
+  }, [selectedDocument]);
 
   return (
     <div className="min-h-screen bg-gradient-subtle text-foreground">
@@ -63,6 +51,8 @@ Plan:
           <MedicalHeader
             isRecording={isRecording}
             onToggleRecording={toggleRecording}
+            onClose={() => setIsRecording(false)}
+            setTranscription={setTranscription}
           />
 
           {/* Documentation Area */}
@@ -81,7 +71,10 @@ Plan:
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
                   generatedDoc={generatedDoc}
-                  onGenerate={handleGenerate}
+                  setSelectedDocument={setSelectedDocument}
+                  setGeneratedDoc={setGeneratedDoc}
+                  setGenrating={setGenrating}
+                  genrating={genrating}
                 />
               </div>
             </div>
