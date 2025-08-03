@@ -1,19 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Sparkles, Copy, Share } from "lucide-react";
+import { Dispatch, SetStateAction } from "react";
 
 interface DocumentationPanelProps {
-  activeTab: "soap" | "referral" | "summary";
-  onTabChange: (tab: "soap" | "referral" | "summary") => void;
+  activeTab: "soap" | "dap" | "referral" | "summary";
+  onTabChange: (tab: "soap" | "dap" | "referral" | "summary") => void;
   generatedDoc: string;
-  onGenerate: () => void;
+  setSelectedDocument: Dispatch<SetStateAction<string | null>>;
+  setGeneratedDoc: Dispatch<SetStateAction<string>>;
+  setGenrating: Dispatch<SetStateAction<boolean>>;
+  genrating: boolean;
 }
 
 export function DocumentationPanel({
   activeTab,
   onTabChange,
   generatedDoc,
-  onGenerate,
+  setSelectedDocument,
+  setGeneratedDoc,
+  setGenrating,
+  genrating,
 }: DocumentationPanelProps) {
   // Color variables (customize these hex codes as needed)
   const colors = {
@@ -39,6 +46,11 @@ export function DocumentationPanel({
       id: "summary" as const,
       label: "Summary",
       description: "Clinical summary",
+    },
+    {
+      id: "dap" as const,
+      label: "DAP Notes",
+      description: "Data, Assessment, Plan notes",
     },
   ];
 
@@ -97,20 +109,18 @@ export function DocumentationPanel({
       {/* Document Display */}
       <div className="relative mb-6">
         <div className="h-80 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
-          {generatedDoc || (
-            <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-              <div>
-                <Sparkles className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                <p>
-                  Click &apos;Generate&apos; to create a {activeTab} document
-                  using AI
-                </p>
-                <p className="text-xs mt-1">
-                  Documentation will appear here automatically
-                </p>
-              </div>
-            </div>
-          )}
+          {!genrating
+            ? Object.entries(generatedDoc).map(([key, value]) => (
+                <div key={key} className="mb-4">
+                  <h3 className="text-base font-semibold capitalize text-primary mb-1">
+                    {key}
+                  </h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {value}
+                  </p>
+                </div>
+              ))
+            : JSON.stringify(generatedDoc)}
         </div>
 
         {generatedDoc && (
@@ -131,7 +141,13 @@ export function DocumentationPanel({
       <div className="flex flex-wrap justify-between gap-3">
         <div className="flex gap-2">
           <Button
-            onClick={onGenerate}
+            onClick={() => {
+              setGenrating(true);
+              setGeneratedDoc(
+                `Generated ${activeTab.toUpperCase()} Document ............`
+              ); // Clear the generated document
+              setSelectedDocument(activeTab); // instert the name of the generated document
+            }}
             style={{
               backgroundColor: colors.accent,
               color: "white",
