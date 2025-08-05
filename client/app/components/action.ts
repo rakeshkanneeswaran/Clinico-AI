@@ -1,6 +1,7 @@
 "use server";
 import { S3Service } from "../data-core/services/s3-service";
 import { DocumentService } from "@/data-core/services/document-service";
+import { SessionService } from "@/data-core/services/session-service";
 
 export async function uploadedFileToS3(file: File): Promise<string> {
     if (!file) {
@@ -57,3 +58,10 @@ export async function getTranscriptBySession({ sessionId }: { sessionId: string 
     return response ? response.content : null;
 }
 
+export async function createSession({ userId }: { userId: string }): Promise<string> {
+    if (!userId) {
+        throw new Error("User ID not provided");
+    }
+    const session = await SessionService.createSession({ userId });
+    return session.sessionId;
+}

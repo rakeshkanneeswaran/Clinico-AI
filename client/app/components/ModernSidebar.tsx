@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { createSession } from "./action";
 import {
   FileText,
   BookOpen,
@@ -32,6 +33,22 @@ export function ModernSidebar() {
     { icon: Users, label: "Team", active: false },
     { icon: Settings, label: "Settings", active: false },
   ];
+
+  const handleNewSession = async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("User ID not found in local storage");
+      return;
+    }
+    try {
+      const sessionId = await createSession({ userId });
+      console.log("New session created with ID:", sessionId);
+      window.location.href = `/dashboard/session?session=${sessionId}`;
+    } catch (error) {
+      console.error("Error creating session:", error);
+      // Handle session creation error (e.g., show notification)
+    }
+  };
 
   return (
     <div
@@ -166,6 +183,7 @@ export function ModernSidebar() {
           backgroundColor: colors.primary,
           color: "white",
         }}
+        onClick={handleNewSession}
       >
         <Plus className="h-4 w-4" />
         New Session
