@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from service.transcription_service import transcribeS3Audio
 from service.document_service import generate_document
 import uvicorn
+from datetime import datetime, timezone
 
 
 class UserData(BaseModel):
@@ -39,9 +40,20 @@ def handle_transcription(user_data: UserData):
 def handle_document_generation(document_data: DocumentData):
     transcript = document_data.transcript
     document_type = document_data.document_type.lower()
-    print(f"Generating document for {document_type}")
+    print(f"[INFO] 📄 Generating '{document_type}' document...")
+
     document = generate_document(transcript, document_type)
-    return {"document": document}
+    timestamp = datetime.now(timezone.utc).isoformat()
+    response = {
+        "status": "success",
+        "timestamp": timestamp,
+        "data": {
+            "document_type": document_type.upper(),
+            "generated_document": document,
+        },
+    }
+
+    return response
 
 
 if __name__ == "__main__":
