@@ -19,9 +19,9 @@ export class UserService {
         });
         return user;
     }
-    static async getUserDataById(userId: string) {
+    static async getUserDataByEmail(email: string) {
         const user = await prisma.user.findUnique({
-            where: { id: userId },
+            where: { email: email },
         });
         if (!user) {
             throw new Error("User not found");
