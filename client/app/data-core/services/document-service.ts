@@ -18,7 +18,7 @@ interface GenerateDocumentResponse {
 
 export class DocumentService {
 
-    static async generateTranscription({ s3_file_path }: { s3_file_path: string }) {
+    static async generateTranscription({ s3_file_path, session_id }: { s3_file_path: string, session_id: string }) {
         // Call the backend service to process the s3_file_name and return the transcription
         console.log("Generating transcription for:", s3_file_path);
         if (!s3_file_path) {
@@ -36,6 +36,33 @@ export class DocumentService {
             throw new Error("Failed to generate transcription");
         }
         const data: GenerateTranscriptionResponse = await response.json();
+        const transcriptExists = await prisma.transcript.findFirst({
+            where: {
+                sessionId: session_id,
+            },
+        });
+
+        if (transcriptExists) {
+            await prisma.transcript.update({
+                where: {
+                    id: transcriptExists.id,
+                },
+                data: {
+
+                    content: data.transcript,
+
+                },
+            });
+        }
+        else {
+            await prisma.transcript.create({
+                data: {
+                    sessionId: session_id,
+                    content: data.transcript,
+                }
+            });
+        }
+
         return data;
     }
 
@@ -67,7 +94,7 @@ export class DocumentService {
         const existingDocument = await prisma.document.findFirst({
             where: {
                 sessionId,
-                type: documentType as DocumentType,
+                type: documentType.toUpperCase() as DocumentType,
             },
         });
         if (existingDocument) {
@@ -77,7 +104,7 @@ export class DocumentService {
                     id: existingDocument.id,
                 },
                 data: {
-                    content,
+                    content: JSON.stringify(content),
                 },
             });
 
@@ -92,19 +119,19 @@ export class DocumentService {
         await prisma.document.create({
             data: {
                 sessionId,
-                type: documentType as DocumentType,
-                content,
+                type: documentType.toUpperCase() as DocumentType,
+                content: JSON.stringify(content),
             },
         });
         return {
             success: true,
         };
     }
-    static async getDocumentByDocumentType({ sessionId, documentType }: { sessionId: string, documentType: string }) {
+    static async getDocumentBySession({ sessionId, documentType }: { sessionId: string, documentType: string }) {
         const document = await prisma.document.findFirst({
             where: {
                 sessionId,
-                type: documentType as DocumentType,
+                type: documentType.toUpperCase() as DocumentType,
             },
         });
         if (!document) {
@@ -120,4 +147,22 @@ export class DocumentService {
         };
     }
 
+    static async getTranscriptBySession({ sessionId }: { sessionId: string }) {
+        const transcript = await prisma.transcript.findFirst({
+            where: {
+                sessionId,
+            },
+        });
+        if (!transcript) {
+            console.log("No transcript found for session:", sessionId, "returning empty content");
+            return {
+                success: true,
+                content: "",
+            };
+        }
+        return {
+            success: true,
+            content: transcript?.content || "",
+        };
+    }
 }

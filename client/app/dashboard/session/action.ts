@@ -9,4 +9,6 @@ export async function generateDocument({ transcript, document_type }: { transcri
     }
     const response = await DocumentService.generateDocument({ transcript, document_type });
     return response;
-}       
+}
+
+

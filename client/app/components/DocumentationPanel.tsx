@@ -1,26 +1,29 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Sparkles, Copy, Share } from "lucide-react";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, use, useEffect } from "react";
+import { saveDocument } from "./action";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { generateDocument } from "./action";
+import { getDocumentBySession } from "./action";
 
 interface DocumentationPanelProps {
-  activeTab: "soap" | "dap" | "referral" | "summary";
-  onTabChange: (tab: "soap" | "dap" | "referral" | "summary") => void;
   generatedDoc: string;
-  setSelectedDocument: Dispatch<SetStateAction<string | null>>;
   setGeneratedDoc: Dispatch<SetStateAction<string>>;
   setGenrating: Dispatch<SetStateAction<boolean>>;
   genrating: boolean;
+  transcription: string;
 }
 
 export function DocumentationPanel({
-  activeTab,
-  onTabChange,
   generatedDoc,
-  setSelectedDocument,
   setGeneratedDoc,
   setGenrating,
   genrating,
+  transcription,
 }: DocumentationPanelProps) {
   // Color variables (customize these hex codes as needed)
   const colors = {
@@ -30,6 +33,83 @@ export function DocumentationPanel({
     badge: "#6366f1", // Indigo-500
     iconBg: "#4f46e5", // Indigo-600
   };
+  const searchParams = useSearchParams();
+  const session = searchParams.get("session");
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(
+    "soap"
+  );
+  const [activeTab, setActiveTab] = useState<
+    "soap" | "referral" | "summary" | "dap"
+  >("soap");
+
+  useEffect(() => {
+    console.log("printing transcription");
+    console.log(transcription);
+  });
+
+  const onGenerateDocument = () => {
+    console.log(transcription);
+    console.log(selectedDocument);
+    setGenrating(true);
+    if (selectedDocument) {
+      generateDocument({
+        transcript: transcription || "",
+        document_type: selectedDocument,
+      })
+        .then((doc) => {
+          setGeneratedDoc(doc);
+          setGenrating(false);
+        })
+        .catch((error) => {
+          console.error("Error generating document:", error);
+        });
+    }
+  };
+
+  const onDocumentSave = async () => {
+    console.log(session);
+    const userId = localStorage.getItem("userId");
+
+    if (!userId || !session) {
+      console.log(userId, session, generatedDoc, activeTab);
+      console.error("User ID, generated document, or session ID is missing");
+      return;
+    }
+    setIsSaving(true);
+    const result = await saveDocument({
+      userId,
+      documentType: activeTab,
+      content: generatedDoc,
+      sessionId: session as string,
+    });
+
+    if (result) {
+      alert("Document saved successfully");
+      // Optionally, you can show a success message or update the UI
+    } else {
+      alert("Failed to save document");
+    }
+    setIsSaving(false);
+  };
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchDocument = async () => {
+      if (session && activeTab) {
+        const doc = await getDocumentBySession({
+          sessionId: session,
+          documentType: activeTab,
+        });
+        if (doc) {
+          setGeneratedDoc(JSON.parse(doc));
+        } else {
+          setGeneratedDoc("");
+        }
+      }
+    };
+    fetchDocument();
+  }, [session, activeTab]);
 
   const tabs = [
     {
@@ -89,10 +169,13 @@ export function DocumentationPanel({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setSelectedDocument(tab.id);
+            }}
             className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-all duration-300 ${
               activeTab === tab.id
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-[0_0_10px_2px_#10b981]"
                 : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             }`}
           >
@@ -142,11 +225,10 @@ export function DocumentationPanel({
         <div className="flex gap-2">
           <Button
             onClick={() => {
-              setGenrating(true);
               setGeneratedDoc(
                 `Generated ${activeTab.toUpperCase()} Document ............`
-              ); // Clear the generated document
-              setSelectedDocument(activeTab); // instert the name of the generated document
+              );
+              onGenerateDocument();
             }}
             style={{
               backgroundColor: colors.accent,
@@ -156,6 +238,22 @@ export function DocumentationPanel({
           >
             <Sparkles className="h-4 w-4" />
             Generate {activeTab.toUpperCase()}
+          </Button>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={async () => {
+              setIsSaving(true);
+              onDocumentSave();
+            }}
+            style={{
+              backgroundColor: colors.accent,
+              color: "white",
+            }}
+            className="gap-2 hover:opacity-90"
+          >
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
 

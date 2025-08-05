@@ -16,6 +16,7 @@ export default function LoginPage() {
     try {
       const user = await loginUser(formData);
       if (user) {
+        localStorage.setItem("userId", user.id);
         router.push(`/dashboard/session?session=${user.session.sessionId}`);
       }
     } catch (error) {

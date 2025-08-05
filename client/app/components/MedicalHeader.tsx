@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, use, useEffect } from "react";
 import Recorder from "recorder-js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { uploadedFileToS3 } from "./action";
-import { generateTranscription } from "./action";
+import {
+  generateTranscription,
+  uploadedFileToS3,
+  getTranscriptBySession,
+} from "./action";
 import { Dispatch, SetStateAction } from "react";
+import { useSearchParams } from "next/navigation";
+
 import {
   Mic,
   MicOff,
@@ -57,6 +62,18 @@ export function MedicalHeader({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const searchParams = useSearchParams();
+  const session = searchParams.get("session");
+
+  useEffect(() => {
+    if (session) {
+      getTranscriptBySession({ sessionId: session }).then((transcript) => {
+        if (transcript) {
+          setTranscription(transcript);
+        }
+      });
+    }
+  }, [session]);
 
   const validateFile = (file: File): boolean => {
     if (
@@ -117,7 +134,10 @@ export function MedicalHeader({
     try {
       const duration = await getAudioDuration(file);
       const fileKey = await uploadedFileToS3(file);
-      const transcriptionResponse = await generateTranscription(fileKey);
+      const transcriptionResponse = await generateTranscription(
+        fileKey,
+        session as string
+      );
       console.log("Transcription Response:", transcriptionResponse);
       setTranscription(transcriptionResponse.transcript);
 

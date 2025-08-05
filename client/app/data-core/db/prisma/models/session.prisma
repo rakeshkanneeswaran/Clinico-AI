@@ -1,8 +1,9 @@
 model Session {
-    id        String     @id @default(cuid())
-    createdAt DateTime   @default(now())
-    updatedAt DateTime   @updatedAt
-    documents Document[]
-    userId    String
-    user      User       @relation(fields: [userId], references: [id])
+    id         String       @id @default(cuid())
+    createdAt  DateTime     @default(now())
+    updatedAt  DateTime     @updatedAt
+    documents  Document[]
+    userId     String
+    user       User         @relation(fields: [userId], references: [id])
+    Transcript Transcript[]
 }

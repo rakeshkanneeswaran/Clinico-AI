@@ -15,4 +15,5 @@ enum DocumentType {
     PROGRESS_NOTE
     PRESCRIPTION
     LAB_ORDER
+    DAP
 }
