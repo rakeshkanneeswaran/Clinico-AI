@@ -82,10 +82,23 @@ export class DocumentService {
         });
 
         if (!response.ok) {
-            throw new Error("Failed to generate document")
+
+            if (response.status === 400) {
+                return {
+                    status: "error",
+                    data: {
+                        generated_document: "transcription not related to medical conversation",
+                    }
+                };
+            }
         }
         const data: GenerateDocumentResponse = await response.json();
-        return data.data.generated_document;
+        return {
+            status: "success",
+            data: {
+                generated_document: data.data.generated_document
+            }
+        }
     }
 
     static async createDocument({ sessionId, userId, documentType, content }: { sessionId: string; userId: string; documentType: string; content: string }) {

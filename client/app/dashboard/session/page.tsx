@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
-import { ModernSidebar } from "@/components/ModernSidebar";
+import { useState } from "react";
 import { MedicalHeader } from "@/components/MedicalHeader";
 import { TranscriptionPanel } from "@/components/TranscriptionPanel";
 import { DocumentationPanel } from "@/components/DocumentationPanel";
@@ -20,9 +19,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle text-foreground">
       <div className="flex">
-        {/* Sidebar */}
-        <ModernSidebar />
-
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Header */}

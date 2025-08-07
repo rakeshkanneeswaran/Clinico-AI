@@ -1,6 +1,9 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRightLeft, Volume2, Waves } from "lucide-react";
+import { ArrowRightLeft, Volume2, Waves, Save } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { saveTranscript } from "./action";
+import { useSearchParams } from "next/navigation";
 
 interface TranscriptionPanelProps {
   transcription: string;
@@ -27,6 +30,13 @@ export function TranscriptionPanel({
 Patient: My stomach hurts badly, doctor. I've been vomiting blood.
 Doctor: I see. Any other symptoms?
 Patient: Yes, black stools and dizziness.`;
+
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session");
+
+  const handleSave = async () => {
+    saveTranscript(sessionId!, transcription);
+  };
 
   return (
     <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
@@ -96,6 +106,22 @@ Patient: Yes, black stools and dizziness.`;
             </div>
           </div>
         )}
+      </div>
+
+      {/* Save button added here */}
+      <div className="mt-4 flex justify-end">
+        <Button
+          onClick={handleSave}
+          style={{
+            backgroundColor: colors.accent,
+            color: "white",
+          }}
+          className="gap-2 hover:opacity-90"
+          disabled={!transcription} // Disable if no transcription
+        >
+          <Save className="h-4 w-4" />
+          Save Transcript
+        </Button>
       </div>
     </div>
   );

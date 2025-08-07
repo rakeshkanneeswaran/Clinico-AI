@@ -2,6 +2,8 @@
 import { S3Service } from "../data-core/services/s3-service";
 import { DocumentService } from "@/data-core/services/document-service";
 import { SessionService } from "@/data-core/services/session-service";
+import { PatientService } from "@/data-core/services/patient-service";
+import { TranscriptService } from "@/data-core/services/transcript-service";
 
 export async function uploadedFileToS3(file: File): Promise<string> {
     if (!file) {
@@ -34,11 +36,17 @@ export async function saveDocument(data: { userId: string; documentType: string;
 
 }
 
-export async function generateDocument({ transcript, document_type }: { transcript: string; document_type: string }): Promise<string> {
+export async function generateDocument({ transcript, document_type }: { transcript: string; document_type: string }): Promise<{
+    status: string;
+    data: {
+        generated_document: string;
+    };
+}> {
     if (!transcript || !document_type) {
         throw new Error("Transcription or document type not provided");
     }
     const response = await DocumentService.generateDocument({ transcript, document_type });
+
     return response;
 }
 
@@ -64,4 +72,55 @@ export async function createSession({ userId }: { userId: string }): Promise<str
     }
     const session = await SessionService.createSession({ userId });
     return session.sessionId;
+}
+
+
+export async function createPatient(data: {
+    name: string;
+    age: string;
+    gender: string;
+    weight: string;
+    height: string;
+    bloodType: string;
+    sessionId: string;
+}): Promise<string> {
+    if (!data.name || !data.age || !data.gender || !data.weight || !data.height || !data.bloodType || !data.sessionId) {
+        throw new Error("All fields are required");
+    }
+
+    const patient = await PatientService.createPatient(data);
+    return patient.id;
+}
+
+export async function getPatientBySession(sessionId: string): Promise<{ id: string; name: string; age: string; gender: string; weight: string; height: string; bloodType: string }> {
+    if (!sessionId) {
+        throw new Error("Session ID not provided");
+    }
+
+    const patient = await PatientService.getPatientBySessionId(sessionId);
+    return patient;
+}
+
+
+async function getTranscriptBySessionId(sessionId: string) {
+
+    try {
+        const transcript = await TranscriptService.getTranscriptBySessionId(sessionId);
+        return transcript.content
+    } catch (error) {
+        console.error("Error fetching transcript by session ID:", error);
+        throw new Error("Failed to fetch transcript");
+
+    }
+
+}
+
+export async function saveTranscript(sessionId: string, content: string) {
+    try {
+        const result = await TranscriptService.updateTranscript({ sessionId, content });
+        return result.success;
+    } catch (error) {
+        console.error("Error saving transcript:", error);
+        throw new Error("Failed to save transcript");
+    }
 }

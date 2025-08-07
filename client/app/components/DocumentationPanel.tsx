@@ -1,9 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Sparkles, Copy, Share } from "lucide-react";
-import { Dispatch, SetStateAction, use, useEffect } from "react";
+import { Dispatch, SetStateAction, useEffect } from "react";
 import { saveDocument } from "./action";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -34,6 +35,7 @@ export function DocumentationPanel({
     iconBg: "#4f46e5", // Indigo-600
   };
   const searchParams = useSearchParams();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const session = searchParams.get("session");
   const [selectedDocument, setSelectedDocument] = useState<string | null>(
     "soap"
@@ -56,8 +58,13 @@ export function DocumentationPanel({
         transcript: transcription || "",
         document_type: selectedDocument,
       })
-        .then((doc) => {
-          setGeneratedDoc(doc);
+        .then((response) => {
+          if (response.status === "error") {
+            alert(response.data.generated_document);
+            setGenrating(false);
+            return;
+          }
+          setGeneratedDoc(response.data.generated_document);
           setGenrating(false);
         })
         .catch((error) => {
@@ -192,21 +199,44 @@ export function DocumentationPanel({
       {/* Document Display */}
       <div className="relative mb-6">
         <div className="h-80 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
-          {!genrating
-            ? Object.entries(generatedDoc).map(([key, value]) => (
-                <div key={key} className="mb-4">
-                  <h3 className="text-base font-semibold capitalize text-primary mb-1">
-                    {key}
-                  </h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {value}
-                  </p>
-                </div>
-              ))
-            : JSON.stringify(generatedDoc)}
+          {genrating ? (
+            <div className="h-full flex flex-col items-center justify-center">
+              <video
+                ref={videoRef}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className=" object-contain"
+              >
+                <source src="/loading.webm" type="video/webm" />
+                {/* Fallback text if video doesn't load */}
+                Generating document...
+              </video>
+              <p className="mt-4 text-muted-foreground">
+                AI is generating your {activeTab.toUpperCase()} document...
+              </p>
+            </div>
+          ) : generatedDoc ? (
+            Object.entries(generatedDoc).map(([key, value]) => (
+              <div key={key} className="mb-4">
+                <h3 className="text-base font-semibold capitalize text-primary mb-1">
+                  {key}
+                </h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {value}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              No document generated yet
+            </div>
+          )}
         </div>
 
-        {generatedDoc && (
+        {/* Keep the copy button but only show when not generating and has content */}
+        {!genrating && generatedDoc && (
           <div className="absolute top-2 right-2">
             <Button
               variant="ghost"
