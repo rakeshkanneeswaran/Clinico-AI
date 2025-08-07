@@ -6,7 +6,7 @@ def generate_referral(transcript):
     prompt = """
     [INST] <<SYS>>
     You are a medical scribe. Convert this doctor-patient conversation into a Referral note in JSON format.
-    The JSON should have these keys: "patient_info", "reason_for_referral", "referring_provider ".
+    The JSON should have these keys: "patient_info", "reason_for_referral", "referring_provider".
     Return ONLY the JSON object, nothing else.
     <</SYS>>
 
@@ -24,13 +24,29 @@ def generate_referral(transcript):
     response = llm.invoke(prompt.format(transcript=transcript))
 
     try:
-        # Try to parse the response as JSON
-        referral_json = json.loads(response)
-        return referral_json
+        parsed = json.loads(response)
+
+        if (
+            isinstance(parsed, dict)
+            and set(parsed.keys())
+            == {"patient_info", "reason_for_referral", "referring_provider"}
+            and isinstance(parsed["patient_info"], (str, dict))
+            and isinstance(parsed["reason_for_referral"], str)
+            and isinstance(parsed["referring_provider"], (str, dict))
+        ):
+            return parsed
+        else:
+            return {
+                "error": "Invalid structure in response",
+                "patient_info": "",
+                "reason_for_referral": "",
+                "referring_provider": "",
+                "raw_response": response,
+            }
+
     except json.JSONDecodeError:
-        # If parsing fails, return a default structure with the raw response
         return {
-            "subjective": "Unable to parse response",
+            "error": "Unable to parse response",
             "patient_info": "",
             "reason_for_referral": "",
             "referring_provider": "",

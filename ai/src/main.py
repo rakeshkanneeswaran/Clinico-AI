@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from service.transcription_service import transcribeS3Audio
 from service.document_service import generate_document
 import uvicorn
 from datetime import datetime, timezone
+from core.agents.medical_classification import is_medical_conversation_transcript
 
 
 class UserData(BaseModel):
@@ -40,6 +41,26 @@ def handle_transcription(user_data: UserData):
 def handle_document_generation(document_data: DocumentData):
     transcript = document_data.transcript
     document_type = document_data.document_type.lower()
+
+    print("[INFO] 🤖 Classifying transcript as medical or non-medical")
+
+    try:
+        result = is_medical_conversation_transcript(transcript)
+
+        print(f"[INFO] 🏷️ Classification: {result}")
+
+        if not result:
+            print("[ERROR] Transcript is not medical-related")
+            raise HTTPException(
+                status_code=400, detail="Transcript is not medical-related"
+            )
+
+    except Exception as e:
+        print(f"[ERROR] Agent execution failed: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail="Internal error during classification."
+        )
+
     print(f"[INFO] 📄 Generating '{document_type}' document...")
 
     document = generate_document(transcript, document_type)

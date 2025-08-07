@@ -24,13 +24,30 @@ def generate_summary(transcript):
     response = llm.invoke(prompt.format(transcript=transcript))
 
     try:
-        # Try to parse the response as JSON
-        summary_json = json.loads(response)
-        return summary_json
+        parsed = json.loads(response)
+
+        if (
+            isinstance(parsed, dict)
+            and set(parsed.keys())
+            == {"patient_info", "reason_for_visit", "clinical_findings"}
+            and all(
+                isinstance(parsed[k], str)
+                for k in ["patient_info", "reason_for_visit", "clinical_findings"]
+            )
+        ):
+            return parsed
+        else:
+            return {
+                "error": "Invalid structure in response",
+                "patient_info": "",
+                "reason_for_visit": "",
+                "clinical_findings": "",
+                "raw_response": response,
+            }
+
     except json.JSONDecodeError:
-        # If parsing fails, return a default structure with the raw response
         return {
-            "subjective": "Unable to parse response",
+            "error": "Unable to parse response",
             "patient_info": "",
             "reason_for_visit": "",
             "clinical_findings": "",

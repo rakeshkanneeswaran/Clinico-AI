@@ -24,9 +24,22 @@ def generate_DAP(transcript):
     response = llm.invoke(prompt.format(transcript=transcript))
 
     try:
-        # Try to parse the response as JSON
-        soap_json = json.loads(response)
-        return soap_json
+        parsed = json.loads(response)
+        if (
+            isinstance(parsed, dict)
+            and set(parsed.keys()) == {"data", "assessment", "plan"}
+            and all(isinstance(parsed[k], str) for k in ["data", "assessment", "plan"])
+        ):
+            return parsed
+        else:
+            # Return fallback with structure error
+            return {
+                "error": "Invalid structure in response",
+                "data": "",
+                "assessment": "",
+                "plan": "",
+                "raw_response": response,
+            }
     except json.JSONDecodeError:
         # If parsing fails, return a default structure with the raw response
         return {
