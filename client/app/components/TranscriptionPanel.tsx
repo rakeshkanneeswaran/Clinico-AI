@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRightLeft, Volume2, Waves, Save } from "lucide-react";
+import { ArrowRightLeft, Volume2, Waves, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saveTranscript } from "./action";
 import { useSearchParams } from "next/navigation";
@@ -16,14 +17,13 @@ export function TranscriptionPanel({
   onTranscriptionChange,
   isRecording = false,
 }: TranscriptionPanelProps) {
-  // Color variables (customize these hex codes as needed)
   const colors = {
-    primary: "#3b82f6", // Blue-500
-    secondary: "#000000", // Black
-    accent: "#10b981", // Emerald-500 (for recording)
-    badge: "#6366f1", // Indigo-500
-    iconBg: "#4f46e5", // Indigo-600
-    danger: "#ef4444", // Red-500 (for recording indicator)
+    primary: "#3b82f6",
+    secondary: "#000000",
+    accent: "#10b981",
+    badge: "#6366f1",
+    iconBg: "#4f46e5",
+    danger: "#ef4444",
   };
 
   const sampleTranscription = `Doctor: How are you feeling today?
@@ -34,8 +34,15 @@ Patient: Yes, black stools and dizziness.`;
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSave = async () => {
-    saveTranscript(sessionId!, transcription);
+    setIsSaving(true);
+    try {
+      await saveTranscript(sessionId!, transcription);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -49,7 +56,7 @@ Patient: Yes, black stools and dizziness.`;
             <ArrowRightLeft className="h-4 w-4 text-white" />
           </div>
           <h2 className="text-lg font-semibold text-foreground">
-            Live Transcription
+            Transcription
           </h2>
         </div>
 
@@ -108,7 +115,7 @@ Patient: Yes, black stools and dizziness.`;
         )}
       </div>
 
-      {/* Save button added here */}
+      {/* Save button with animation */}
       <div className="mt-4 flex justify-end">
         <Button
           onClick={handleSave}
@@ -117,10 +124,19 @@ Patient: Yes, black stools and dizziness.`;
             color: "white",
           }}
           className="gap-2 hover:opacity-90"
-          disabled={!transcription} // Disable if no transcription
+          disabled={!transcription || isSaving}
         >
-          <Save className="h-4 w-4" />
-          Save Transcript
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Save Transcript
+            </>
+          )}
         </Button>
       </div>
     </div>
