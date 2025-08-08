@@ -15,8 +15,14 @@ class SOAP(BaseModel):
 
 
 class Referral(BaseModel):
-    patient_info: str = Field(description="Patient's information")
-    reason_for_referral: str = Field(description="Reason for referral")
+    reason_for_referral: str = Field(description="Reason for referring the patient")
+    relevant_medical_history: str = Field(
+        description="Relevant medical history summary"
+    )
+    current_findings: str = Field(description="Current physical exam and test findings")
+    referring_doctor_requests: str = Field(
+        description="Requested actions or feedback from specialist"
+    )
 
 
 class Summary(BaseModel):

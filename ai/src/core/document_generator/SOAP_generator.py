@@ -12,19 +12,11 @@ def generate_SOAP(transcript):
 
     try:
         response = generate_llm(SOAP).invoke(prompt.format(transcript=transcript))
-        transcript_str = (
-            f"Subjective: {response.subjective}\n"
-            f"Objective: {response.objective}\n"
-            f"Assessment: {response.assessment}\n"
-            f"Plan: {response.plan}"
-        )
-
         return {
             "subjective": response.subjective,
             "objective": response.objective,
             "assessment": response.assessment,
             "plan": response.plan,
-            "transcript": transcript_str,
         }
     except Exception:
         return {
