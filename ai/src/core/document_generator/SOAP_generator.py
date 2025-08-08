@@ -1,39 +1,37 @@
-from core.model.model import llm
-import json
+from core.model.model import generate_llm
+from core.model.llm_schemas import SOAP
 
 
 def generate_SOAP(transcript):
     prompt = """
-    [INST] <<SYS>>
-    You are a medical scribe. Convert this doctor-patient conversation into a SOAP note in JSON format.
-    The JSON should have these keys: "subjective", "objective", "assessment", "plan".
-    Return ONLY the JSON object, nothing else.
-    <</SYS>>
+    You are a medical scribe. Convert this doctor-patient conversation into a SOAP note.
 
     **Conversation:**
     {transcript}
-
-    **Structured Output:**
-    {{
-        "subjective": "patient's complaints here",
-        "objective": "doctor's findings here",
-        "assessment": "diagnosis here",
-        "plan": "next steps here"
-    }}[/INST]
     """
 
-    response = llm.invoke(prompt.format(transcript=transcript))
-
     try:
-        # Try to parse the response as JSON
-        soap_json = json.loads(response)
-        return soap_json
-    except json.JSONDecodeError:
-        # If parsing fails, return a default structure with the raw response
+        response = generate_llm(SOAP).invoke(prompt.format(transcript=transcript))
+        transcript_str = (
+            f"Subjective: {response.subjective}\n"
+            f"Objective: {response.objective}\n"
+            f"Assessment: {response.assessment}\n"
+            f"Plan: {response.plan}"
+        )
+
+        return {
+            "subjective": response.subjective,
+            "objective": response.objective,
+            "assessment": response.assessment,
+            "plan": response.plan,
+            "transcript": transcript_str,
+        }
+    except Exception:
         return {
             "subjective": "Unable to parse response",
             "objective": "",
             "assessment": "",
             "plan": "",
-            "raw_response": response,
+            "transcript": "",
+            "raw_response": str(response) if "response" in locals() else None,
         }

@@ -44,24 +44,24 @@ def handle_document_generation(document_data: DocumentData):
 
     print("[INFO] 🤖 Classifying transcript as medical or non-medical")
 
-    try:
-        result = is_medical_conversation_transcript(transcript)
+    # try:
+    #     result = is_medical_conversation_transcript(transcript)
 
-        print(f"[INFO] 🏷️ Classification: {result}")
+    #     print(f"[INFO] 🏷️ Classification: {result}")
 
-        if not result:
-            print("[ERROR] Transcript is not medical-related")
-            raise HTTPException(
-                status_code=400, detail="Transcript is not medical-related"
-            )
+    #     if not result:
+    #         print("[ERROR] Transcript is not medical-related")
+    #         raise HTTPException(
+    #             status_code=400, detail="Transcript is not medical-related"
+    #         )
 
-    except Exception as e:
-        print(f"[ERROR] Agent execution failed: {str(e)}")
-        raise HTTPException(
-            status_code=400, detail="Internal error during classification."
-        )
+    # except Exception as e:
+    #     print(f"[ERROR] Agent execution failed: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=400, detail="Internal error during classification."
+    #     )
 
-    print(f"[INFO] 📄 Generating '{document_type}' document...")
+    # print(f"[INFO] 📄 Generating '{document_type}' document...")
 
     document = generate_document(transcript, document_type)
     timestamp = datetime.now(timezone.utc).isoformat()

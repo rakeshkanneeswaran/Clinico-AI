@@ -1,54 +1,31 @@
-from core.model.model import llm
-import json
+from core.model.model import generate_llm
+from core.model.llm_schemas import Referral
 
 
 def generate_referral(transcript):
     prompt = """
-    [INST] <<SYS>>
-    You are a medical scribe. Convert this doctor-patient conversation into a Referral note in JSON format.
-    The JSON should have these keys: "patient_info", "reason_for_referral", "referring_provider".
-    Return ONLY the JSON object, nothing else.
-    <</SYS>>
+    You are a medical scribe. Convert this doctor-patient conversation into a Referral note.
 
     **Conversation:**
     {transcript}
-
-    **Structured Output:**
-    {{
-        "patient_info": "patient's information here",
-        "reason_for_referral": "reason for referral here",
-        "referring_provider": "referring provider's information here"
-    }}[/INST]
     """
 
-    response = llm.invoke(prompt.format(transcript=transcript))
-
     try:
-        parsed = json.loads(response)
+        response = generate_llm(Referral).invoke(prompt.format(transcript=transcript))
+        transcript_str = (
+            f"Patient Info: {response.patient_info}\n"
+            f"Reason for Referral: {response.reason_for_referral}"
+        )
 
-        if (
-            isinstance(parsed, dict)
-            and set(parsed.keys())
-            == {"patient_info", "reason_for_referral", "referring_provider"}
-            and isinstance(parsed["patient_info"], (str, dict))
-            and isinstance(parsed["reason_for_referral"], str)
-            and isinstance(parsed["referring_provider"], (str, dict))
-        ):
-            return parsed
-        else:
-            return {
-                "error": "Invalid structure in response",
-                "patient_info": "",
-                "reason_for_referral": "",
-                "referring_provider": "",
-                "raw_response": response,
-            }
-
-    except json.JSONDecodeError:
         return {
-            "error": "Unable to parse response",
-            "patient_info": "",
+            "patient_info": response.patient_info,
+            "reason_for_referral": response.reason_for_referral,
+            "transcript": transcript_str,
+        }
+    except Exception:
+        return {
+            "patient_info": "Unable to parse response",
             "reason_for_referral": "",
-            "referring_provider": "",
-            "raw_response": response,
+            "transcript": "",
+            "raw_response": str(response) if "response" in locals() else None,
         }
