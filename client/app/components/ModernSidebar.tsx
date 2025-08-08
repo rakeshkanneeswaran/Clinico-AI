@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -10,10 +12,15 @@ import {
   Plus,
   User,
   Clock,
+  LayoutDashboard,
+  Bell,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function ModernSidebar() {
-  // Color variables (customize these hex codes as needed)
+  const router = useRouter();
+
+  // Color variables
   const colors = {
     primary: "#3b82f6", // Blue-500
     secondary: "#000000", // Black
@@ -27,11 +34,16 @@ export function ModernSidebar() {
     mutedText: "#64748b", // Slate-500
   };
 
-  const navigationItems = [
-    { icon: BookOpen, label: "Templates Library", active: false },
-    { icon: Users, label: "Community", active: false },
-    { icon: Users, label: "Team", active: false },
-    { icon: Settings, label: "Settings", active: false },
+  const generalItems = [
+    { icon: LayoutDashboard, label: "Dashboard", link: "/dashboard" },
+    { icon: Bell, label: "Notifications", link: "/notifications" },
+  ];
+
+  const documentationItems = [
+    { icon: BookOpen, label: "Templates Library", link: "/templates" },
+    { icon: Users, label: "Community", link: "/community" },
+    { icon: Users, label: "Team", link: "/team" },
+    { icon: Settings, label: "Settings", link: "/settings" },
   ];
 
   const handleNewSession = async () => {
@@ -43,10 +55,9 @@ export function ModernSidebar() {
     try {
       const sessionId = await createSession({ userId });
       console.log("New session created with ID:", sessionId);
-      window.location.href = `/dashboard/session?session=${sessionId}`;
+      router.push(`/dashboard/session?session=${sessionId}`);
     } catch (error) {
       console.error("Error creating session:", error);
-      // Handle session creation error (e.g., show notification)
     }
   };
 
@@ -58,6 +69,20 @@ export function ModernSidebar() {
         borderRight: `1px solid ${colors.separator}`,
       }}
     >
+      {/* New Session Button at Top */}
+      <Button
+        size="lg"
+        className="w-full gap-2 mb-6"
+        style={{
+          backgroundColor: colors.primary,
+          color: "white",
+        }}
+        onClick={handleNewSession}
+      >
+        <Plus className="h-4 w-4" />
+        New Session
+      </Button>
+
       {/* Header */}
       <div className="mb-8 space-y-2">
         <div className="flex items-center gap-3">
@@ -134,6 +159,36 @@ export function ModernSidebar() {
 
       {/* Navigation */}
       <div className="space-y-6 flex-grow">
+        {/* General */}
+        <div>
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3"
+            style={{ color: colors.mutedText }}
+          >
+            General
+          </h2>
+          <div className="space-y-1">
+            {generalItems.map((item, index) => (
+              <Button
+                key={index}
+                variant="ghost"
+                style={{
+                  color: colors.activeText,
+                }}
+                className="w-full justify-start gap-3 h-auto p-3 text-left hover:bg-blue-50"
+                onClick={() => router.push(item.link)}
+              >
+                <item.icon
+                  className="h-4 w-4"
+                  style={{ color: colors.mutedText }}
+                />
+                <span className="text-sm">{item.label}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Documentation Tools */}
         <div>
           <h2
             className="text-xs font-semibold uppercase tracking-wider mb-3"
@@ -142,26 +197,19 @@ export function ModernSidebar() {
             Documentation Tools
           </h2>
           <div className="space-y-1">
-            {navigationItems.map((item, index) => (
+            {documentationItems.map((item, index) => (
               <Button
                 key={index}
                 variant="ghost"
                 style={{
                   color: colors.activeText,
-                  backgroundColor: item.active
-                    ? `${colors.primary}10`
-                    : "transparent",
                 }}
-                // Add Tailwind hover:bg-blue-100 for hover effect
-                className={`w-full justify-start gap-3 h-auto p-3 text-left ${
-                  item.active ? "bg-blue-100" : ""
-                } hover:bg-blue-50`}
+                className="w-full justify-start gap-3 h-auto p-3 text-left hover:bg-blue-50"
+                onClick={() => router.push(item.link)}
               >
                 <item.icon
                   className="h-4 w-4"
-                  style={{
-                    color: item.active ? colors.primary : colors.mutedText,
-                  }}
+                  style={{ color: colors.mutedText }}
                 />
                 <span className="text-sm">{item.label}</span>
               </Button>
@@ -174,20 +222,6 @@ export function ModernSidebar() {
         className="my-4"
         style={{ backgroundColor: colors.separator }}
       />
-
-      {/* New Session Button */}
-      <Button
-        size="lg"
-        className="w-full gap-2 bg-blue-500 hover:bg-blue-600 text-white"
-        style={{
-          backgroundColor: colors.primary,
-          color: "white",
-        }}
-        onClick={handleNewSession}
-      >
-        <Plus className="h-4 w-4" />
-        New Session
-      </Button>
     </div>
   );
 }

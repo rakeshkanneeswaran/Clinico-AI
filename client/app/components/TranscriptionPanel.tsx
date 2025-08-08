@@ -92,7 +92,7 @@ Patient: Yes, black stools and dizziness.`;
         <Textarea
           value={transcription || sampleTranscription}
           onChange={(e) => onTranscriptionChange(e.target.value)}
-          className="h-80 resize-none font-mono text-sm bg-background/50 border-border/50 focus:ring-2 transition-all duration-300"
+          className="h-117 resize-none font-mono text-sm bg-background/50 border-border/50 focus:ring-2 transition-all duration-300"
           style={{
             borderColor: `${colors.primary}50`,
           }}
@@ -116,7 +116,7 @@ Patient: Yes, black stools and dizziness.`;
       </div>
 
       {/* Save button with animation */}
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex justify-start">
         <Button
           onClick={handleSave}
           style={{

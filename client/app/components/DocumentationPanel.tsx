@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { generateDocument } from "./action";
 import { getDocumentBySession } from "./action";
+import { CautionComponent } from "./CautionComponent";
 
 interface DocumentationPanelProps {
   generatedDoc: string;
@@ -44,6 +45,28 @@ export function DocumentationPanel({
     "soap" | "referral" | "summary" | "dap"
   >("soap");
 
+  const [showCaution, setShowCaution] = useState(false);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const errorAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio("/sounds/success.mp3");
+    audioRef.current.volume = 0.3; // Set appropriate volume (0.0 to 1.0)
+
+    errorAudioRef.current = new Audio("/sounds/error.mp3");
+    errorAudioRef.current.volume = 0.3;
+
+    return () => {
+      // Cleanup
+      [audioRef.current, errorAudioRef.current].forEach((audio) => {
+        if (audio) {
+          audio.pause();
+        }
+      });
+    };
+  }, []);
+
   useEffect(() => {
     console.log("printing transcription");
     console.log(transcription);
@@ -60,12 +83,24 @@ export function DocumentationPanel({
       })
         .then((response) => {
           if (response.status === "error") {
-            alert(response.data.generated_document);
+            errorAudioRef.current?.play();
+            setShowCaution(true); // Show caution component instead of alert
             setGenrating(false);
             return;
           }
+          console.log(
+            "Document generated successfully:",
+            response.data.generated_document
+          );
           setGeneratedDoc(response.data.generated_document);
           setGenrating(false);
+          // Play success sound when document is generated
+          if (audioRef.current) {
+            audioRef.current.currentTime = 0; // Rewind to start
+            audioRef.current
+              .play()
+              .catch((e) => console.log("Audio play failed:", e));
+          }
         })
         .catch((error) => {
           console.error("Error generating document:", error);
@@ -310,6 +345,18 @@ export function DocumentationPanel({
           </Button>
         </div>
       </div>
+      {showCaution && (
+        <CautionComponent
+          onContinue={() => {
+            setShowCaution(false);
+            // You might want to proceed with something here
+          }}
+          onCancel={() => {
+            setShowCaution(false);
+            setGenrating(false);
+          }}
+        />
+      )}
     </div>
   );
 }

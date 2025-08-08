@@ -11,46 +11,46 @@ export default function Navbar() {
 
   // Check auth status (replace with your actual auth check)
   useEffect(() => {
-    // This would be replaced with your actual auth state check
     const token = localStorage.getItem("authToken");
     setIsLoggedIn(!!token);
   }, [pathname]);
 
   const handleLogout = () => {
-    // Replace with your actual logout logic
     localStorage.removeItem("authToken");
     setIsLoggedIn(false);
     window.location.href = "/signup";
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 py-4 px-6 flex justify-between items-center">
+    <nav className="fixed w-full z-50 bg-black py-4 px-6 flex justify-between items-center">
       {/* Logo Section */}
       <div
-        className="flex items-center space-x-2"
+        className="flex items-center space-x-3 cursor-pointer"
         onClick={() => (window.location.href = "/")}
       >
-        <FaStethoscope className="text-blue-600 text-2xl" />
-        <span className="text-xl font-bold text-blue-800">MediScribe AI</span>
+        <FaStethoscope className="text-white text-2xl" />
+        <span className="text-xl font-semibold text-white tracking-tight">
+          MediScribe AI
+        </span>
       </div>
 
       {/* Navigation Links - Hidden on mobile */}
-      <div className="hidden md:flex space-x-8">
+      <div className="hidden md:flex space-x-10">
         <Link
           href="#features"
-          className="text-gray-600 hover:text-blue-600 transition-colors"
+          className="text-gray-300 hover:text-white transition-colors font-medium text-sm tracking-wide"
         >
           Features
         </Link>
         <Link
           href="#how-it-works"
-          className="text-gray-600 hover:text-blue-600 transition-colors"
+          className="text-gray-300 hover:text-white transition-colors font-medium text-sm tracking-wide"
         >
           How It Works
         </Link>
         <Link
           href="#pricing"
-          className="text-gray-600 hover:text-blue-600 transition-colors"
+          className="text-gray-300 hover:text-white transition-colors font-medium text-sm tracking-wide"
         >
           Pricing
         </Link>
@@ -58,34 +58,34 @@ export default function Navbar() {
 
       {/* Authentication Buttons */}
       {isLoggedIn ? (
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-6">
           <Link
             href="/dashboard"
-            className="text-gray-600 hover:text-blue-600 transition-colors hidden md:block"
+            className="text-gray-300 hover:text-white transition-colors hidden md:block font-medium text-sm tracking-wide"
           >
             Dashboard
           </Link>
-          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-            <span className="text-sm font-medium text-blue-600">DR</span>
+          <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20 hover:bg-white/20 transition-colors cursor-pointer">
+            <span className="text-sm font-medium text-white">DR</span>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+            className="px-5 py-2 text-white border border-white/30 rounded-lg hover:bg-white/10 transition-colors font-medium text-sm tracking-wide"
           >
             Sign Out
           </button>
         </div>
       ) : (
-        <div className="flex space-x-4">
+        <div className="flex space-x-5">
           <Link
             href="/signup"
-            className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+            className="px-5 py-2 text-white border border-white/30 rounded-lg hover:bg-white/10 transition-colors font-medium text-sm tracking-wide"
           >
             Log In
           </Link>
           <Link
             href="/signup"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-5 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm tracking-wide"
           >
             Sign Up
           </Link>
