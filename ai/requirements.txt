@@ -1,9 +1,0 @@
-whisper
-pyannote.audio
-fastapi
-pydantic
-uvicorn
-boto3
-langchain
-langchain-community
-langchain-core
