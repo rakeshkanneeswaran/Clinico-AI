@@ -13,6 +13,7 @@ import { Dispatch, SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
 import { PatientForm } from "./PatientForm";
 import { X } from "lucide-react";
+import { Suspense } from "react";
 
 import {
   Mic,
@@ -32,13 +33,6 @@ interface MedicalHeaderProps {
   maxSizeInMB?: number;
   onClose: () => void;
   setTranscription: Dispatch<SetStateAction<string>>;
-}
-
-interface UploadedFile {
-  file: File;
-  duration?: number;
-  size: number;
-  name: string;
 }
 
 export function MedicalHeader({
@@ -77,7 +71,7 @@ export function MedicalHeader({
         }
       });
     }
-  }, [session]);
+  }, [session, setTranscription]);
 
   const validateFile = (file: File): boolean => {
     if (
@@ -171,7 +165,9 @@ export function MedicalHeader({
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
     const audioContext = new AudioContextClass();
     audioContextRef.current = audioContext;
 
@@ -198,191 +194,193 @@ export function MedicalHeader({
   };
 
   return (
-    <>
-      {/* Patient Form Modal Overlay */}
-      {showPatientForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Patient Details</h3>
-              <button
-                onClick={() => setShowPatientForm(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <PatientForm />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Header */}
-      <div
-        className="border-b p-6 backdrop-blur-sm relative z-10"
-        style={{
-          background: `linear-gradient(135deg, ${colors.primary}10, ${colors.accent}10)`,
-          borderColor: `${colors.primary}20`,
-        }}
-      >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-              onClick={() => setShowPatientForm(true)}
-            >
-              <User className="h-4 w-4" />
-              Patient Details
-            </Button>
-            <div className="space-y-2">
-              <h2
-                className="text-2xl font-bold"
-                style={{ color: colors.secondary }}
-              >
-                Patient Documentation
-              </h2>
-              <div className="flex items-center gap-4 text-sm">
-                <Badge
-                  variant="outline"
-                  className="gap-1.5"
-                  style={{
-                    color: colors.badge,
-                    borderColor: `${colors.badge}20`,
-                  }}
+    <Suspense fallback={<div>Loading...</div>}>
+      <>
+        {/* Patient Form Modal Overlay */}
+        {showPatientForm && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Patient Details</h3>
+                <button
+                  onClick={() => setShowPatientForm(false)}
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  <Globe className="h-3 w-3" />
-                  English
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="gap-1.5"
-                  style={{
-                    color: colors.badge,
-                    borderColor: `${colors.badge}20`,
-                  }}
-                >
-                  <Clock className="h-3 w-3" />
-                  14 days retention
-                </Badge>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6">
+                <PatientForm />
               </div>
             </div>
           </div>
+        )}
 
-          <div className="flex items-center gap-4">
-            {/* Upload Button */}
-            <div className="relative">
-              <input
-                type="file"
-                accept=".wav,audio/wav"
-                onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
-                disabled={isRecording || isUploading}
-              />
+        {/* Main Header */}
+        <div
+          className="border-b p-6 backdrop-blur-sm relative z-10"
+          style={{
+            background: `linear-gradient(135deg, ${colors.primary}10, ${colors.accent}10)`,
+            borderColor: `${colors.primary}20`,
+          }}
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
               <Button
-                asChild
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 className="gap-2"
-                disabled={isRecording || isUploading}
+                onClick={() => setShowPatientForm(true)}
               >
-                <label htmlFor="file-upload">
-                  <UploadIcon className="h-4 w-4" />
-                  Upload
-                </label>
+                <User className="h-4 w-4" />
+                Patient Details
+              </Button>
+              <div className="space-y-2">
+                <h2
+                  className="text-2xl font-bold"
+                  style={{ color: colors.secondary }}
+                >
+                  Patient Documentation
+                </h2>
+                <div className="flex items-center gap-4 text-sm">
+                  <Badge
+                    variant="outline"
+                    className="gap-1.5"
+                    style={{
+                      color: colors.badge,
+                      borderColor: `${colors.badge}20`,
+                    }}
+                  >
+                    <Globe className="h-3 w-3" />
+                    English
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="gap-1.5"
+                    style={{
+                      color: colors.badge,
+                      borderColor: `${colors.badge}20`,
+                    }}
+                  >
+                    <Clock className="h-3 w-3" />
+                    14 days retention
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Upload Button */}
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".wav,audio/wav"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="file-upload"
+                  disabled={isRecording || isUploading}
+                />
+                <Button
+                  asChild
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isRecording || isUploading}
+                >
+                  <label htmlFor="file-upload">
+                    <UploadIcon className="h-4 w-4" />
+                    Upload
+                  </label>
+                </Button>
+              </div>
+
+              {/* Upload Progress Bar */}
+              {isUploading && (
+                <div className="w-32 h-2 rounded-full bg-gray-200 overflow-hidden relative animate-pulse">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-200"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
+
+              {/* Download Recorded Audio */}
+              {audioURL && (
+                <a
+                  href={audioURL}
+                  download="recording.wav"
+                  className="ml-2 text-sm text-blue-600 flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </a>
+              )}
+
+              {/* Recording Status */}
+              <div
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                  isRecording ? "border" : "bg-muted"
+                }`}
+                style={{
+                  backgroundColor: isRecording ? colors.recordingBg : undefined,
+                  color: isRecording ? colors.danger : undefined,
+                  borderColor: isRecording ? `${colors.danger}20` : undefined,
+                }}
+              >
+                {isRecording ? (
+                  <>
+                    <div
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{ backgroundColor: colors.danger }}
+                    />
+                    <span className="font-mono text-sm">{recordingTime}</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-4 w-4" />
+                    <span className="text-sm">Ready to record</span>
+                  </>
+                )}
+              </div>
+
+              {/* Record Button */}
+              <Button
+                onClick={toggleRecording}
+                size="icon"
+                className="rounded-full"
+                style={{
+                  backgroundColor: isRecording ? colors.danger : colors.primary,
+                  color: "white",
+                }}
+                disabled={isUploading}
+              >
+                {isRecording ? (
+                  <MicOff className="h-5 w-5" />
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+              </Button>
+
+              {/* Options Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                style={{ color: colors.primary }}
+              >
+                <MoreVertical className="h-5 w-5" />
               </Button>
             </div>
-
-            {/* Upload Progress Bar */}
-            {isUploading && (
-              <div className="w-32 h-2 rounded-full bg-gray-200 overflow-hidden relative animate-pulse">
-                <div
-                  className="h-full bg-blue-500 transition-all duration-200"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            )}
-
-            {/* Download Recorded Audio */}
-            {audioURL && (
-              <a
-                href={audioURL}
-                download="recording.wav"
-                className="ml-2 text-sm text-blue-600 flex items-center gap-1"
-              >
-                <Download className="h-4 w-4" />
-                Download
-              </a>
-            )}
-
-            {/* Recording Status */}
-            <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                isRecording ? "border" : "bg-muted"
-              }`}
-              style={{
-                backgroundColor: isRecording ? colors.recordingBg : undefined,
-                color: isRecording ? colors.danger : undefined,
-                borderColor: isRecording ? `${colors.danger}20` : undefined,
-              }}
-            >
-              {isRecording ? (
-                <>
-                  <div
-                    className="w-2 h-2 rounded-full animate-pulse"
-                    style={{ backgroundColor: colors.danger }}
-                  />
-                  <span className="font-mono text-sm">{recordingTime}</span>
-                </>
-              ) : (
-                <>
-                  <Mic className="h-4 w-4" />
-                  <span className="text-sm">Ready to record</span>
-                </>
-              )}
-            </div>
-
-            {/* Record Button */}
-            <Button
-              onClick={toggleRecording}
-              size="icon"
-              className="rounded-full"
-              style={{
-                backgroundColor: isRecording ? colors.danger : colors.primary,
-                color: "white",
-              }}
-              disabled={isUploading}
-            >
-              {isRecording ? (
-                <MicOff className="h-5 w-5" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
-
-            {/* Options Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              style={{ color: colors.primary }}
-            >
-              <MoreVertical className="h-5 w-5" />
-            </Button>
           </div>
-        </div>
 
-        {/* Feedback */}
-        {errorMessage && (
-          <p className="text-sm text-red-600 mt-2">{errorMessage}</p>
-        )}
-        {successMessage && (
-          <p className="text-sm text-green-600 mt-2">{successMessage}</p>
-        )}
-      </div>
-    </>
+          {/* Feedback */}
+          {errorMessage && (
+            <p className="text-sm text-red-600 mt-2">{errorMessage}</p>
+          )}
+          {successMessage && (
+            <p className="text-sm text-green-600 mt-2">{successMessage}</p>
+          )}
+        </div>
+      </>
+    </Suspense>
   );
 }

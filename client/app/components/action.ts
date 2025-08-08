@@ -102,18 +102,6 @@ export async function getPatientBySession(sessionId: string): Promise<{ id: stri
 }
 
 
-async function getTranscriptBySessionId(sessionId: string) {
-
-    try {
-        const transcript = await TranscriptService.getTranscriptBySessionId(sessionId);
-        return transcript.content
-    } catch (error) {
-        console.error("Error fetching transcript by session ID:", error);
-        throw new Error("Failed to fetch transcript");
-
-    }
-
-}
 
 export async function saveTranscript(sessionId: string, content: string) {
     try {

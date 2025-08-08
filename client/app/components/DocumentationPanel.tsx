@@ -11,6 +11,7 @@ import { useState } from "react";
 import { generateDocument } from "./action";
 import { getDocumentBySession } from "./action";
 import { CautionComponent } from "./CautionComponent";
+import { Suspense } from "react";
 
 interface DocumentationPanelProps {
   generatedDoc: string;
@@ -71,6 +72,21 @@ export function DocumentationPanel({
     console.log("printing transcription");
     console.log(transcription);
   });
+
+  function renderValue(value: unknown) {
+    if (typeof value === "object" && value !== null) {
+      return (
+        <ul className="pl-4 list-disc">
+          {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
+            <li key={k}>
+              <strong>{k}:</strong> {renderValue(v)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return value as React.ReactNode;
+  }
 
   const onGenerateDocument = () => {
     console.log(transcription);
@@ -151,7 +167,7 @@ export function DocumentationPanel({
       }
     };
     fetchDocument();
-  }, [session, activeTab]);
+  }, [session, activeTab, setGeneratedDoc]);
 
   const tabs = [
     {
@@ -177,186 +193,184 @@ export function DocumentationPanel({
   ];
 
   return (
-    <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: colors.iconBg }}
-          >
-            <FileText className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Generated Documentation
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              AI-powered medical documentation
-            </p>
-          </div>
-        </div>
-
-        <Badge
-          variant="outline"
-          className="gap-1.5"
-          style={{ borderColor: colors.badge, color: colors.badge }}
-        >
-          <Sparkles className="h-3 w-3" />
-          AI Enhanced
-        </Badge>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6 p-1 bg-muted/50 rounded-lg">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              setSelectedDocument(tab.id);
-            }}
-            className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-all duration-300 ${
-              activeTab === tab.id
-                ? "bg-background text-foreground shadow-[0_0_10px_2px_#10b981]"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-            }`}
-          >
-            <div className="text-center">
-              <div className="font-medium">{tab.label}</div>
-              <div className="text-xs text-muted-foreground">
-                {tab.description}
-              </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: colors.iconBg }}
+            >
+              <FileText className="h-4 w-4 text-white" />
             </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Document Display */}
-      <div className="relative mb-6">
-        <div className="h-80 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
-          {genrating ? (
-            <div className="h-full flex flex-col items-center justify-center">
-              <video
-                ref={videoRef}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className=" object-contain"
-              >
-                <source src="/loading.webm" type="video/webm" />
-                {/* Fallback text if video doesn't load */}
-                Generating document...
-              </video>
-              <p className="mt-4 text-muted-foreground">
-                AI is generating your {activeTab.toUpperCase()} document...
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Generated Documentation
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                AI-powered medical documentation
               </p>
             </div>
-          ) : generatedDoc ? (
-            Object.entries(generatedDoc).map(([key, value]) => (
-              <div key={key} className="mb-4">
-                <h3 className="text-base font-semibold capitalize text-primary mb-1">
-                  {key}
-                </h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {value}
+          </div>
+
+          <Badge
+            variant="outline"
+            className="gap-1.5"
+            style={{ borderColor: colors.badge, color: colors.badge }}
+          >
+            <Sparkles className="h-3 w-3" />
+            AI Enhanced
+          </Badge>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6 p-1 bg-muted/50 rounded-lg">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSelectedDocument(tab.id);
+              }}
+              className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-all duration-300 ${
+                activeTab === tab.id
+                  ? "bg-background text-foreground shadow-[0_0_10px_2px_#10b981]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <div className="text-center">
+                <div className="font-medium">{tab.label}</div>
+                <div className="text-xs text-muted-foreground">
+                  {tab.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Document Display */}
+        <div className="relative mb-6">
+          <div className="h-80 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
+            {genrating ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className=" object-contain"
+                >
+                  <source src="/loading.webm" type="video/webm" />
+                  {/* Fallback text if video doesn't load */}
+                  Generating document...
+                </video>
+                <p className="mt-4 text-muted-foreground">
+                  AI is generating your {activeTab.toUpperCase()} document...
                 </p>
               </div>
-            ))
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              No document generated yet
+            ) : generatedDoc ? (
+              Object.entries(generatedDoc).map(([key, value]) => (
+                <div key={key} className="mb-4">
+                  <h3 className="text-base font-semibold capitalize text-primary mb-1">
+                    {key}
+                  </h3>
+                  <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {renderValue(value)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                No document generated yet
+              </div>
+            )}
+          </div>
+
+          {/* Keep the copy button but only show when not generating and has content */}
+          {!genrating && generatedDoc && (
+            <div className="absolute top-2 right-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                style={{ color: colors.primary }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
             </div>
           )}
         </div>
 
-        {/* Keep the copy button but only show when not generating and has content */}
-        {!genrating && generatedDoc && (
-          <div className="absolute top-2 right-2">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap justify-between gap-3">
+          <div className="flex gap-2">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              style={{ color: colors.primary }}
+              onClick={() => {
+                setGeneratedDoc(
+                  `Generated ${activeTab.toUpperCase()} Document ............`
+                );
+                onGenerateDocument();
+              }}
+              style={{
+                backgroundColor: colors.accent,
+                color: "white",
+              }}
+              className="gap-2 hover:opacity-90"
             >
-              <Copy className="h-3 w-3" />
+              <Sparkles className="h-4 w-4" />
+              Generate {activeTab.toUpperCase()}
             </Button>
           </div>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                setIsSaving(true);
+                onDocumentSave();
+              }}
+              style={{
+                backgroundColor: colors.accent,
+                color: "white",
+              }}
+              className="gap-2 hover:opacity-90"
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={!generatedDoc}
+              style={{ borderColor: colors.primary, color: colors.primary }}
+            >
+              <Share className="h-4 w-4" />
+              Share
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={!generatedDoc}
+              style={{ borderColor: colors.primary, color: colors.primary }}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
+        {showCaution && (
+          <CautionComponent
+            onCancel={() => {
+              setShowCaution(false);
+              setGenrating(false);
+            }}
+          />
         )}
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap justify-between gap-3">
-        <div className="flex gap-2">
-          <Button
-            onClick={() => {
-              setGeneratedDoc(
-                `Generated ${activeTab.toUpperCase()} Document ............`
-              );
-              onGenerateDocument();
-            }}
-            style={{
-              backgroundColor: colors.accent,
-              color: "white",
-            }}
-            className="gap-2 hover:opacity-90"
-          >
-            <Sparkles className="h-4 w-4" />
-            Generate {activeTab.toUpperCase()}
-          </Button>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={async () => {
-              setIsSaving(true);
-              onDocumentSave();
-            }}
-            style={{
-              backgroundColor: colors.accent,
-              color: "white",
-            }}
-            className="gap-2 hover:opacity-90"
-          >
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            disabled={!generatedDoc}
-            style={{ borderColor: colors.primary, color: colors.primary }}
-          >
-            <Share className="h-4 w-4" />
-            Share
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            disabled={!generatedDoc}
-            style={{ borderColor: colors.primary, color: colors.primary }}
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-        </div>
-      </div>
-      {showCaution && (
-        <CautionComponent
-          onContinue={() => {
-            setShowCaution(false);
-            // You might want to proceed with something here
-          }}
-          onCancel={() => {
-            setShowCaution(false);
-            setGenrating(false);
-          }}
-        />
-      )}
-    </div>
+    </Suspense>
   );
 }

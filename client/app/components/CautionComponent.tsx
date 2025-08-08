@@ -4,14 +4,10 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CautionComponentProps {
-  onContinue: () => void;
   onCancel: () => void;
 }
 
-export function CautionComponent({
-  onContinue,
-  onCancel,
-}: CautionComponentProps) {
+export function CautionComponent({ onCancel }: CautionComponentProps) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gradient-card rounded-xl p-6 shadow-lg border border-gray-200 dark:border-border/50 backdrop-blur-sm max-w-md w-full animate-in fade-in zoom-in-95">

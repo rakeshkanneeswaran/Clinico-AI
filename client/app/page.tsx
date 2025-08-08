@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import Link from "next/link";
 import {
@@ -56,10 +57,12 @@ export default function Home() {
           </div>
           <div className="md:w-1/2">
             <div className="rounded-xl shadow-lg border border-border/50 bg-background/50 backdrop-blur-md p-2">
-              <img
+              <Image
                 src="/dashboard.png"
                 alt="ClinicScribe AI Dashboard"
                 className="rounded-lg w-full h-auto"
+                width={600}
+                height={400}
               />
             </div>
           </div>
