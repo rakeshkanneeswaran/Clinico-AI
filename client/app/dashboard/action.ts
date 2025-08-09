@@ -13,3 +13,15 @@ export async function getSessions(userId: string): Promise<{ id: string; created
     }
     return session;
 }
+
+export async function deleteSession(sessionId: string): Promise<{ success: boolean; sessionId: string }> {
+    if (!sessionId) {
+        throw new Error("Session ID not provided");
+    }
+
+    const result = await SessionService.deleteSession({ sessionId });
+    return {
+        success: result.success,
+        sessionId: result.sessionId
+    };
+}

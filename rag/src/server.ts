@@ -41,6 +41,17 @@ app.post('/api/delete-and-recreate-vectorstore/', async (request, reply) => {
     }
 });
 
+app.post('/api/delete-all-data-from-vectorstore/', async (request, reply) => {
+    try {
+        const { sessionId } = request.body as { sessionId: string };
+        await SupabaseService.deleteAllDataFromVectorStore(sessionId);
+        return { status: 'success', message: 'All data deleted from vector store' };
+    } catch (error) {
+        app.log.error(error);
+        reply.status(500).send({ status: 'error', message: 'Failed to delete data from vector store' });
+    }
+});
+
 // Start server
 const start = async () => {
     try {

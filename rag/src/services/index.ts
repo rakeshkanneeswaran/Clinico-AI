@@ -89,4 +89,20 @@ export class SupabaseService {
 
         await this.storeConversation(sessionId, transcript);
     }
+
+    static async deleteAllDataFromVectorStore(sessionId: string): Promise<void> {
+        const { error } = await this.supabaseClient
+            .from('conversation_vectors')
+            .delete()
+            .eq('session_id', sessionId);
+
+        if (error) throw error;
+    }
+
+    /**
+     * Clear all data from the vector store for a specific session
+     */
+    static async clearSessionData(sessionId: string): Promise<void> {
+        await this.deleteAllDataFromVectorStore(sessionId);
+    }
 }

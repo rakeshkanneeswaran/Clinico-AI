@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { RAGService } from "./rag-service";
 
 export class SessionService {
     static async createSession(data: { userId: string }) {
@@ -40,5 +41,31 @@ export class SessionService {
             } : null,
         }));
     }
+
+    // delete session and all related data
+
+    static async deleteSession({ sessionId }: { sessionId: string }) {
+        if (!sessionId) {
+            throw new Error("Session ID not provided");
+        }
+
+        const [, , , session] = await prisma.$transaction([
+            prisma.patient.deleteMany({ where: { sessionId } }),
+            prisma.document.deleteMany({ where: { sessionId } }),
+            prisma.transcript.deleteMany({ where: { sessionId } }),
+            prisma.session.delete({ where: { id: sessionId } }),
+        ]);
+
+        const response = await RAGService.deleteVectorStore(sessionId);
+        if (response.status !== "success") {
+            throw new Error("Failed to delete vector store data");
+        }
+
+        return {
+            success: true,
+            sessionId: session.id,
+        };
+    }
+
 
 }

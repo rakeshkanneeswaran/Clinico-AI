@@ -43,4 +43,21 @@ export class RAGService {
         return result;
     }
 
+    static async deleteVectorStore(sessionId: string): Promise<{ status: string }> {
+        const response = await fetch(`${process.env.RAG_API_URL}/api/delete-all-data-from-vectorstore/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sessionId: sessionId
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete vector store data');
+        }
+        return { status: 'success' };
+    }
+
 }
