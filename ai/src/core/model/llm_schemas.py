@@ -35,3 +35,7 @@ class PIE(BaseModel):
     evaluation: str = Field(
         description="Evaluation of the intervention's effectiveness"
     )
+
+
+class Answer(BaseModel):
+    answer: str = Field(description="Generated answer based on query and contexts")

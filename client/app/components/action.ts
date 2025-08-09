@@ -4,6 +4,7 @@ import { DocumentService } from "@/data-core/services/document-service";
 import { SessionService } from "@/data-core/services/session-service";
 import { PatientService } from "@/data-core/services/patient-service";
 import { TranscriptService } from "@/data-core/services/transcript-service";
+import { RAGService } from "@/data-core/services/rag-service";
 
 export async function uploadedFileToS3(file: File): Promise<string> {
     if (!file) {
@@ -106,9 +107,26 @@ export async function getPatientBySession(sessionId: string): Promise<{ id: stri
 export async function saveTranscript(sessionId: string, content: string) {
     try {
         const result = await TranscriptService.updateTranscript({ sessionId, content });
+        // save transcript to RAG service
+        const response = await RAGService.storeConversation(content, sessionId);
+        if (response.status !== 'success') {
+            throw new Error(response.message || "Failed to save transcript");
+        }
         return result.success;
     } catch (error) {
         console.error("Error saving transcript:", error);
         throw new Error("Failed to save transcript");
     }
+}
+
+export async function storeConversation(transcript: string, sessionId: string) {
+    return RAGService.storeConversation(transcript, sessionId);
+}
+
+export async function askQuestion(query: string, sessionId: string): Promise<{ status: string; answer: string }> {
+    if (!query) {
+        throw new Error("Query not provided");
+    }
+    const response = await RAGService.askQuestion(query, sessionId);
+    return response;
 }

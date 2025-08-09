@@ -5,6 +5,7 @@ from service.document_service import generate_document
 import uvicorn
 from datetime import datetime, timezone
 from core.agents.medical_classification import is_medical_conversation_transcript
+from core.document_generator.answer_generator import answer_query
 
 
 class UserData(BaseModel):
@@ -75,6 +76,17 @@ def handle_document_generation(document_data: DocumentData):
     }
 
     return response
+
+
+class QueryRequest(BaseModel):
+    query: str
+    contexts: list[str]
+
+
+@app.post("/api/generate-answer")
+def handle_answer_generation(request: QueryRequest):
+    answer = answer_query(request.query, request.contexts)
+    return {"status": "success", "answer": answer}
 
 
 if __name__ == "__main__":

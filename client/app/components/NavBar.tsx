@@ -30,7 +30,7 @@ export default function Navbar() {
       >
         <FaStethoscope className="text-white text-2xl" />
         <span className="text-xl font-semibold text-white tracking-tight">
-          MediScribe AI
+          ClinicScribe AI
         </span>
       </div>
 
