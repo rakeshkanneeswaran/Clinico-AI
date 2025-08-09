@@ -1,5 +1,10 @@
 import boto3
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 
 s3Client = boto3.client(
     "s3",
