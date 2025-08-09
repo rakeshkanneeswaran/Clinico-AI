@@ -68,11 +68,6 @@ export function DocumentationPanel({
     };
   }, []);
 
-  useEffect(() => {
-    console.log("printing transcription");
-    console.log(transcription);
-  });
-
   function renderValue(value: unknown) {
     if (typeof value === "object" && value !== null) {
       return (
@@ -89,8 +84,6 @@ export function DocumentationPanel({
   }
 
   const onGenerateDocument = () => {
-    console.log(transcription);
-    console.log(selectedDocument);
     setGenrating(true);
     if (selectedDocument) {
       generateDocument({
@@ -104,10 +97,6 @@ export function DocumentationPanel({
             setGenrating(false);
             return;
           }
-          console.log(
-            "Document generated successfully:",
-            response.data.generated_document
-          );
           setGeneratedDoc(response.data.generated_document);
           setGenrating(false);
           // Play success sound when document is generated
@@ -125,11 +114,9 @@ export function DocumentationPanel({
   };
 
   const onDocumentSave = async () => {
-    console.log(session);
     const userId = localStorage.getItem("userId");
 
     if (!userId || !session) {
-      console.log(userId, session, generatedDoc, activeTab);
       console.error("User ID, generated document, or session ID is missing");
       return;
     }

@@ -69,7 +69,6 @@ export class DocumentService {
     static async generateDocument({ transcript, document_type }: { transcript: string; document_type: string }) {
         // Call the backend service to generate the document based on the transcription and document type
         console.log("Generating document for:", document_type);
-        console.log("Transcript:", transcript);
         if (!transcript || !document_type) {
             throw new Error("Transcription or document type not provided");
         }

@@ -21,8 +21,6 @@ export function AIAssistant({ showPanel, onTogglePanel }: AIAssistantProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      // Handle AI query
-      console.log("AI Query:", query);
       setQuery("");
     }
   };

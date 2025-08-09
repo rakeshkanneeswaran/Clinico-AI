@@ -136,7 +136,6 @@ export function MedicalHeader({
         fileKey,
         session as string
       );
-      console.log("Transcription Response:", transcriptionResponse);
       setTranscription(transcriptionResponse.transcript);
 
       setSuccessMessage(

@@ -54,7 +54,6 @@ export function ModernSidebar() {
     }
     try {
       const sessionId = await createSession({ userId });
-      console.log("New session created with ID:", sessionId);
       router.push(`/dashboard/session?session=${sessionId}`);
     } catch (error) {
       console.error("Error creating session:", error);
