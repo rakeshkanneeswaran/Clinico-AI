@@ -71,9 +71,8 @@ export function ModernSidebar() {
       {/* New Session Button at Top */}
       <Button
         size="lg"
-        className="w-full gap-2 mb-6"
+        className="w-full gap-2 mb-6 hover:opacity-90 bg-black hover:bg-black/90"
         style={{
-          backgroundColor: colors.primary,
           color: "white",
         }}
         onClick={handleNewSession}
@@ -109,50 +108,6 @@ export function ModernSidebar() {
         >
           <Clock className="h-3 w-3" />
           <span>Today 11:25 PM</span>
-        </div>
-      </div>
-
-      {/* Current Patient */}
-      <div className="mb-8">
-        <h2
-          className="text-xs font-semibold uppercase tracking-wider mb-3"
-          style={{ color: colors.mutedText }}
-        >
-          Current Patient
-        </h2>
-        <div
-          className="p-4 rounded-lg border"
-          style={{
-            backgroundColor: colors.patientCardBg,
-            borderColor: `${colors.primary}20`,
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: colors.primary }}
-            >
-              <User className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-medium" style={{ color: colors.activeText }}>
-                Rakeah Kame...
-              </h3>
-              <p className="text-sm" style={{ color: colors.mutedText }}>
-                Active Session
-              </p>
-            </div>
-            <Badge
-              variant="secondary"
-              className="text-xs"
-              style={{
-                backgroundColor: colors.accent,
-                color: "white",
-              }}
-            >
-              Live
-            </Badge>
-          </div>
         </div>
       </div>
 

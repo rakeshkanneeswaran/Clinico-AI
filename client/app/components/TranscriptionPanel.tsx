@@ -50,7 +50,7 @@ Patient: Yes, black stools and dizziness.`;
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+      <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-[#e2e8f0] backdrop-blur-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div
@@ -124,10 +124,9 @@ Patient: Yes, black stools and dizziness.`;
           <Button
             onClick={handleSave}
             style={{
-              backgroundColor: colors.accent,
               color: "white",
             }}
-            className="gap-2 hover:opacity-90"
+            className="gap-2 hover:opacity-90 bg-black hover:bg-black/90 text-white font-bold"
             disabled={!transcription || isSaving}
           >
             {isSaving ? (

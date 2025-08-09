@@ -76,7 +76,9 @@ export function AIChatComponent() {
 
   return (
     <div
-      className={`w-full relative ${!isChatOpen ? "border border-black" : ""}`}
+      className={`w-full relative ${
+        !isChatOpen ? "border border-[#e2e8f0]" : ""
+      }`}
     >
       {!isChatOpen && (
         <Button

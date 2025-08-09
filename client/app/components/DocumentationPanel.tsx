@@ -181,7 +181,7 @@ export function DocumentationPanel({
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-border/50 backdrop-blur-sm">
+      <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-[#e2e8f0] backdrop-blur-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div
@@ -221,7 +221,7 @@ export function DocumentationPanel({
               }}
               className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-all duration-300 ${
                 activeTab === tab.id
-                  ? "bg-background text-foreground shadow-[0_0_10px_2px_#10b981]"
+                  ? "bg-background text-foreground shadow-lg shadow-[#8db2df]"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
@@ -300,10 +300,9 @@ export function DocumentationPanel({
                 onGenerateDocument();
               }}
               style={{
-                backgroundColor: colors.accent,
                 color: "white",
               }}
-              className="gap-2 hover:opacity-90"
+              className="gap-2 hover:opacity-90 bg-black hover:bg-black/90 text-white font-bold"
             >
               <Sparkles className="h-4 w-4" />
               Generate {activeTab.toUpperCase()}
@@ -317,10 +316,9 @@ export function DocumentationPanel({
                 onDocumentSave();
               }}
               style={{
-                backgroundColor: colors.accent,
                 color: "white",
               }}
-              className="gap-2 hover:opacity-90"
+              className="gap-2 hover:opacity-90 bg-black hover:bg-black/90 text-white font-bold"
             >
               {isSaving ? "Saving..." : "Save"}
             </Button>

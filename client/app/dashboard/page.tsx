@@ -1,89 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  FileText,
-  Search,
-  MoreHorizontal,
-  ArrowRight,
-  Trash2,
-  ChevronDown,
-  X,
-} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSessions, deleteSession } from "./action";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  FilterFn,
-} from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 
-declare module "@tanstack/table-core" {
-  interface FilterFns {
-    customFilter: FilterFn<unknown>;
-  }
+interface Session {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  patient: {
+    id: string;
+    name: string;
+    age: string;
+    weight: string;
+    height: string;
+    bloodType: string;
+    gender: string;
+  } | null;
 }
 
 export default function DashboardPage() {
-  const [sessions, setSessions] = useState<
-    {
-      id: string;
-      createdAt: Date;
-      updatedAt: Date;
-      patient: {
-        id: string;
-        name: string;
-        age: string;
-        weight: string;
-        height: string;
-        bloodType: string;
-        gender: string;
-      } | null;
-    }[]
-  >([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const router = useRouter();
 
   useEffect(() => {
@@ -141,285 +85,265 @@ export default function DashboardPage() {
     });
   };
 
-  const columns: ColumnDef<any>[] = [
-    {
-      accessorKey: "patient.name",
-      header: "Patient Name",
-      cell: ({ row }) => (
-        <div className="font-medium">
-          {row.original.patient?.name || "Unnamed Patient"}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "patient.age",
-      header: "Age",
-      cell: ({ row }) => <div>{row.original.patient?.age || "N/A"}</div>,
-    },
-    {
-      accessorKey: "patient.gender",
-      header: "Gender",
-      cell: ({ row }) => <div>{row.original.patient?.gender || "N/A"}</div>,
-    },
-    {
-      accessorKey: "patient.bloodType",
-      header: "Blood Type",
-      cell: ({ row }) => <div>{row.original.patient?.bloodType || "N/A"}</div>,
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Created At",
-      cell: ({ row }) => <div>{formatDate(row.original.createdAt)}</div>,
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-10 w-10 p-0" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56" // Increased width
-            >
-              <DropdownMenuLabel className="px-4 py-2 text-sm font-medium">
-                {" "}
-                {/* Added padding */}
-                Actions
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="my-1" /> {/* Added margin */}
-              <DropdownMenuItem
-                className="px-4 py-2 text-sm" // Added padding and text size
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigator.clipboard.writeText(row.original.id);
-                  toast.success("Session ID copied to clipboard");
-                }}
-              >
-                <FileText className="mr-3 h-4 w-4" />{" "}
-                {/* Increased icon spacing */}
-                Copy Session ID
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="px-4 py-2 text-sm" // Added padding and text size
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/dashboard/session?session=${row.original.id}`);
-                }}
-              >
-                <ArrowRight className="mr-3 h-4 w-4" />{" "}
-                {/* Increased icon spacing */}
-                View Session
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1" /> {/* Added margin */}
-              <DropdownMenuItem
-                className="px-4 py-2 text-sm text-red-600 focus:text-red-600 focus:bg-red-50" // Enhanced styling
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(row.original.id);
-                }}
-              >
-                <Trash2 className="mr-3 h-4 w-4" />{" "}
-                {/* Increased icon spacing */}
-                Delete Session
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
-
-  const table = useReactTable({
-    data: sessions,
-    columns,
-    filterFns: {
-      customFilter: (row, columnId, filterValue) => {
-        const value = row.getValue(columnId)?.toString().toLowerCase() || "";
-        return value.includes(filterValue.toLowerCase());
-      },
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
+  const filteredSessions = sessions.filter((session) => {
+    if (!searchTerm) return true;
+    return (
+      session.patient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      session.patient?.age?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      session.patient?.gender
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      session.patient?.bloodType
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      formatDate(session.createdAt)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    );
   });
+
+  const totalPages = Math.ceil(filteredSessions.length / rowsPerPage);
+  const paginatedSessions = filteredSessions.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Patient Sessions
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">Patient Sessions</h1>
         <div className="flex gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search sessions..."
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="pl-10 w-[300px]"
-            />
-            {globalFilter && (
-              <X
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer"
-                onClick={() => setGlobalFilter("")}
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
-            )}
-          </div>
-          <Button className="gap-2">
-            <FileText className="h-4 w-4" />
-            New Session
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-md border bg-white shadow-sm">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  <div className="flex justify-center items-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() =>
-                    router.push(`/dashboard/session?session=${row.original.id}`)
-                  }
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No sessions found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex items-center justify-between px-2 mt-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {table.getRowModel().rows.length} of {sessions.length}{" "}
-          sessions
-        </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
-            <select
-              className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
-              value={table.getState().pagination.pageSize}
+            </svg>
+            <input
+              type="text"
+              placeholder="Search sessions..."
+              value={searchTerm}
               onChange={(e) => {
-                table.setPageSize(Number(e.target.value));
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
               }}
-            >
-              {[5, 10, 20, 30, 40, 50].map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize}
-                </option>
-              ))}
-            </select>
+              className="pl-10 w-[300px] h-10 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            )}
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+          <button className="flex items-center gap-2 h-10 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors">
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Previous
-            </Button>
-            <div className="flex items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            New Session
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-md border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Patient Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Age
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Gender
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Blood Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created At
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center">
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedSessions.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
+                    No sessions found
+                  </td>
+                </tr>
+              ) : (
+                paginatedSessions.map((session) => (
+                  <tr
+                    key={session.id}
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() =>
+                      router.push(`/dashboard/session?session=${session.id}`)
+                    }
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">
+                        {session.patient?.name || "Unnamed Patient"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {session.patient?.age || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {session.patient?.gender || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {session.patient?.bloodType || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {formatDate(session.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(
+                              `/dashboard/session?session=${session.id}`
+                            );
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(session.id);
+                          }}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200">
+          <div className="text-sm text-gray-500">
+            Showing {paginatedSessions.length} of {filteredSessions.length}{" "}
+            sessions
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2">
+              <label htmlFor="rows-per-page" className="text-sm text-gray-700">
+                Rows per page:
+              </label>
+              <select
+                id="rows-per-page"
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {[5, 10, 20, 30, 40, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Are you sure?
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
               This action cannot be undone. This will permanently delete the
               session and remove the data from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setDeleteDialogOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

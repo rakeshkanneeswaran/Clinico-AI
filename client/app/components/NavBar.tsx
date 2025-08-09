@@ -22,7 +22,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed w-full z-50 bg-black py-4 px-6 flex justify-between items-center">
+    <nav className="fixed w-full  bg-black py-4 px-6 flex justify-between items-center">
       {/* Logo Section */}
       <div
         className="flex items-center space-x-3 cursor-pointer"

@@ -2,13 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MessageCircle, 
-  Send, 
-  X,
-  Sparkles,
-  Brain
-} from "lucide-react";
+import { MessageCircle, Send, X, Sparkles, Brain } from "lucide-react";
 
 interface AIAssistantProps {
   showPanel: boolean;
@@ -49,11 +43,15 @@ export function AIAssistant({ showPanel, onTogglePanel }: AIAssistantProps) {
               <Brain className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">ClinicScribe AI Assistant</h3>
-              <p className="text-sm text-muted-foreground">Ask anything about medical documentation</p>
+              <h3 className="font-semibold text-foreground">
+                ClinicScribe AI Assistant
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Ask anything about medical documentation
+              </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="gap-1.5">
               <Sparkles className="h-3 w-3" />
@@ -69,7 +67,7 @@ export function AIAssistant({ showPanel, onTogglePanel }: AIAssistantProps) {
             </Button>
           </div>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="flex gap-3">
           <Input
             value={query}
@@ -77,24 +75,33 @@ export function AIAssistant({ showPanel, onTogglePanel }: AIAssistantProps) {
             placeholder="Ask about medical terminology, documentation standards, or get help with your notes..."
             className="flex-1 bg-background/50 border-border/50 focus:border-medical-blue/50 focus:ring-medical-blue/20"
           />
-          <Button 
-            type="submit" 
-            variant="medical" 
+          <Button
+            type="submit"
+            variant="medical"
             size="icon"
             disabled={!query.trim()}
           >
             <Send className="h-4 w-4" />
           </Button>
         </form>
-        
+
         <div className="mt-4 flex flex-wrap gap-2">
-          <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+          <Badge
+            variant="secondary"
+            className="cursor-pointer hover:bg-secondary/80"
+          >
             How to write SOAP notes?
           </Badge>
-          <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+          <Badge
+            variant="secondary"
+            className="cursor-pointer hover:bg-secondary/80"
+          >
             Medical abbreviations
           </Badge>
-          <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+          <Badge
+            variant="secondary"
+            className="cursor-pointer hover:bg-secondary/80"
+          >
             Referral templates
           </Badge>
         </div>
