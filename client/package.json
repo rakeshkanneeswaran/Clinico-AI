@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "sync" : "npx prisma migrate deploy --schema=app/data-core/db/prisma/schema.prisma && npx prisma generate --schema=app/data-core/db/prisma/schema.prisma && pnpm install"
+    "sync": "pnpm install && cd app/data-core/db && npx prisma migrate deploy && npx prisma generate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.858.0",
