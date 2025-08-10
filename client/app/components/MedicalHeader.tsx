@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import Recorder from "recorder-js";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   generateTranscription,
   uploadedFileToS3,
@@ -19,8 +18,6 @@ import {
   Mic,
   MicOff,
   MoreVertical,
-  Clock,
-  Globe,
   Upload as UploadIcon,
   Download,
   User,
@@ -224,7 +221,7 @@ export function MedicalHeader({
           }}
         >
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -234,38 +231,9 @@ export function MedicalHeader({
                 <User className="h-4 w-4" />
                 Patient Details
               </Button>
-              <div className="space-y-2">
-                <h2
-                  className="text-2xl font-bold"
-                  style={{ color: colors.secondary }}
-                >
-                  Patient Documentation
-                </h2>
-                <div className="flex items-center gap-4 text-sm">
-                  <Badge
-                    variant="outline"
-                    className="gap-1.5"
-                    style={{
-                      color: colors.badge,
-                      borderColor: `${colors.badge}20`,
-                    }}
-                  >
-                    <Globe className="h-3 w-3" />
-                    English
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="gap-1.5"
-                    style={{
-                      color: colors.badge,
-                      borderColor: `${colors.badge}20`,
-                    }}
-                  >
-                    <Clock className="h-3 w-3" />
-                    14 days retention
-                  </Badge>
-                </div>
-              </div>
+              <span className="text-sm text-gray-500">
+                Click to view and edit patient details
+              </span>
             </div>
 
             <div className="flex items-center gap-4">

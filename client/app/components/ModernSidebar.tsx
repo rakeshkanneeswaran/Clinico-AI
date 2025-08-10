@@ -88,7 +88,7 @@ export function ModernSidebar() {
               className="text-xl font-bold"
               style={{ color: colors.activeText }}
             >
-              ClinicScribe AI
+              Clinico AI
             </h1>
             <p className="text-sm" style={{ color: colors.mutedText }}>
               Medical Documentation

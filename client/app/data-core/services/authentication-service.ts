@@ -59,9 +59,7 @@ export class AuthenticationService {
         if (!session) {
             throw new Error("Session not found");
         }
-        if (session.expiresAt < new Date()) {
-            throw new Error("Session expired");
-        }
+
 
 
         // await prisma.userAccessLog.create({

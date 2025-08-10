@@ -63,6 +63,7 @@ export function AIChatComponent() {
           timestamp: new Date(),
         },
       ]);
+      console.error("Error asking question:", error);
     } finally {
       setIsLoading(false);
     }
@@ -82,14 +83,20 @@ export function AIChatComponent() {
     >
       {!isChatOpen && (
         <Button
-          className="w-full flex items-center gap-2"
+          className="w-full flex items-center gap-2 border-0" // remove default border
+          style={{
+            borderTop: "1px solid red",
+            borderBottom: "1px solid blue",
+            borderLeft: "1px solid black",
+            borderRight: "1px solid black",
+          }}
           onClick={() => setIsChatOpen(true)}
         >
           <Sparkles className="h-4 w-4" />
-          Heidi AI
+          <div>Clinico AI</div>
+          <span className="text-sm text-gray-500">Ask Me Anything!</span>
         </Button>
       )}
-
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
@@ -102,7 +109,7 @@ export function AIChatComponent() {
             style={{ maxHeight: "70vh" }} // Adjust as needed
           >
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">Ask Heidi AI</h2>
+              <h2 className="text-lg font-semibold">Ask Clinico AI</h2>
               <Button
                 variant="ghost"
                 size="sm"
@@ -146,7 +153,7 @@ export function AIChatComponent() {
                   <div className="max-w-[80%] rounded-lg px-4 py-2 bg-secondary text-secondary-foreground">
                     <div className="flex items-center gap-2">
                       <div className="dot-flashing"></div>
-                      <span className="text-sm">Heidi is thinking...</span>
+                      <span className="text-sm">Clinico AI is thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -160,7 +167,7 @@ export function AIChatComponent() {
                 ref={textareaRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask Heidi..."
+                placeholder="Ask Clinico AI..."
                 className="pr-12 resize-none"
                 rows={2}
                 disabled={isLoading}

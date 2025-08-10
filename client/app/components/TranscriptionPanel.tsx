@@ -8,17 +8,22 @@ import { Button } from "@/components/ui/button";
 import { saveTranscript } from "./action";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { Sparkles } from "lucide-react";
 
 interface TranscriptionPanelProps {
   transcription: string;
   onTranscriptionChange: (value: string) => void;
   isRecording?: boolean;
+  onDeepAnalysis?: () => void; // Add this prop
+  isAnalyzing?: boolean; // Add this prop
 }
 
 export function TranscriptionPanel({
   transcription,
   onTranscriptionChange,
   isRecording = false,
+  onDeepAnalysis,
+  isAnalyzing = false,
 }: TranscriptionPanelProps) {
   const colors = {
     primary: "#3b82f6",
@@ -120,7 +125,7 @@ Patient: Yes, black stools and dizziness.`;
         </div>
 
         {/* Save button with animation */}
-        <div className="mt-4 flex justify-start">
+        <div className="mt-4 flex justify-between">
           <Button
             onClick={handleSave}
             style={{
@@ -138,6 +143,24 @@ Patient: Yes, black stools and dizziness.`;
               <>
                 <Save className="h-4 w-4" />
                 Save Transcript
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={onDeepAnalysis}
+            variant="outline"
+            className="gap-2 border-primary text-primary hover:bg-primary/10"
+            disabled={!transcription || isAnalyzing}
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Deep Analysis
               </>
             )}
           </Button>
