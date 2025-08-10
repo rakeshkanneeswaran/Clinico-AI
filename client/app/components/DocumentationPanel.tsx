@@ -114,15 +114,12 @@ export function DocumentationPanel({
   };
 
   const onDocumentSave = async () => {
-    const userId = localStorage.getItem("userId");
-
-    if (!userId || !session) {
+    if (!session) {
       console.error("User ID, generated document, or session ID is missing");
       return;
     }
     setIsSaving(true);
     const result = await saveDocument({
-      userId,
       documentType: activeTab,
       content: generatedDoc,
       sessionId: session as string,

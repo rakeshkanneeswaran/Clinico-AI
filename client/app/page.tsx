@@ -217,7 +217,7 @@ export default function Home() {
                 <span className="text-xl font-bold">ClinicScribe AI</span>
               </div>
               <p className="text-gray-600">
-                The physician's AI assistant for effortless clinical
+                The physician&apos;s AI assistant for effortless clinical
                 documentation.
               </p>
             </div>

@@ -5,20 +5,38 @@ import { SessionService } from "@/data-core/services/session-service";
 import { PatientService } from "@/data-core/services/patient-service";
 import { TranscriptService } from "@/data-core/services/transcript-service";
 import { RAGService } from "@/data-core/services/rag-service";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { AuthenticationService } from "@/data-core/services/authentication-service";
+
+// Helper function for session validation
+async function validateSession() {
+    const sessionToken = (await cookies()).get('session_token')?.value;
+    if (!sessionToken) {
+        redirect('/login');
+    }
+    const user = await AuthenticationService.getUserBySession(sessionToken);
+    if (!user) {
+        redirect('/login');
+    }
+    return user;
+}
 
 export async function uploadedFileToS3(file: File): Promise<string> {
+    await validateSession(); // Validate session first
+
     if (!file) {
         throw new Error("No file selected");
     }
-
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const fileKey = await S3Service.uploadFile(buffer);
-    return fileKey
-
+    return fileKey;
 }
 
 export async function generateTranscription(s3FileName: string, sessionId: string): Promise<{ s3_file_name: string; transcript: string; message: string }> {
+    await validateSession();
+
     if (!s3FileName) {
         throw new Error("No S3 file name provided");
     }
@@ -27,14 +45,14 @@ export async function generateTranscription(s3FileName: string, sessionId: strin
     return response;
 }
 
+export async function saveDocument(data: { documentType: string; content: string, sessionId: string }): Promise<boolean> {
+    const user = await validateSession();
 
-
-
-export async function saveDocument(data: { userId: string; documentType: string; content: string, sessionId: string }): Promise<boolean> {
-
-    const document = await DocumentService.createDocument(data)
+    const document = await DocumentService.createDocument({
+        ...data,
+        userId: user.id // Add the validated user ID
+    });
     return document.success;
-
 }
 
 export async function generateDocument({ transcript, document_type }: { transcript: string; document_type: string }): Promise<{
@@ -43,15 +61,18 @@ export async function generateDocument({ transcript, document_type }: { transcri
         generated_document: string;
     };
 }> {
+    await validateSession();
+
     if (!transcript || !document_type) {
         throw new Error("Transcription or document type not provided");
     }
     const response = await DocumentService.generateDocument({ transcript, document_type });
-
     return response;
 }
 
 export async function getDocumentBySession({ sessionId, documentType }: { sessionId: string; documentType: string }): Promise<string | null> {
+    await validateSession();
+
     if (!sessionId || !documentType) {
         throw new Error("Session ID or document type not provided");
     }
@@ -60,6 +81,8 @@ export async function getDocumentBySession({ sessionId, documentType }: { sessio
 }
 
 export async function getTranscriptBySession({ sessionId }: { sessionId: string }): Promise<string | null> {
+    await validateSession();
+
     if (!sessionId) {
         throw new Error("Session ID not provided");
     }
@@ -67,14 +90,11 @@ export async function getTranscriptBySession({ sessionId }: { sessionId: string 
     return response ? response.content : null;
 }
 
-export async function createSession({ userId }: { userId: string }): Promise<string> {
-    if (!userId) {
-        throw new Error("User ID not provided");
-    }
-    const session = await SessionService.createSession({ userId });
+export async function createSession(): Promise<string> {
+    const user = await validateSession();
+    const session = await SessionService.createSession({ userId: user.id });
     return session.sessionId;
 }
-
 
 export async function createPatient(data: {
     name: string;
@@ -85,6 +105,8 @@ export async function createPatient(data: {
     bloodType: string;
     sessionId: string;
 }): Promise<string> {
+    await validateSession();
+
     if (!data.name || !data.age || !data.gender || !data.weight || !data.height || !data.bloodType || !data.sessionId) {
         throw new Error("All fields are required");
     }
@@ -94,6 +116,8 @@ export async function createPatient(data: {
 }
 
 export async function getPatientBySession(sessionId: string): Promise<{ id: string; name: string; age: string; gender: string; weight: string; height: string; bloodType: string }> {
+    await validateSession();
+
     if (!sessionId) {
         throw new Error("Session ID not provided");
     }
@@ -102,12 +126,11 @@ export async function getPatientBySession(sessionId: string): Promise<{ id: stri
     return patient;
 }
 
-
-
 export async function saveTranscript(sessionId: string, content: string) {
+    await validateSession();
+
     try {
         const result = await TranscriptService.updateTranscript({ sessionId, content });
-        // save transcript to RAG service
         const response = await RAGService.storeConversation(content, sessionId);
         if (response.status !== 'success') {
             throw new Error(response.message || "Failed to save transcript");
@@ -120,10 +143,13 @@ export async function saveTranscript(sessionId: string, content: string) {
 }
 
 export async function storeConversation(transcript: string, sessionId: string) {
+    await validateSession();
     return RAGService.storeConversation(transcript, sessionId);
 }
 
 export async function askQuestion(query: string, sessionId: string): Promise<{ status: string; answer: string }> {
+    await validateSession();
+
     if (!query) {
         throw new Error("Query not provided");
     }

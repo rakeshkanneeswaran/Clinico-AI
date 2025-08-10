@@ -35,11 +35,8 @@ export default function DashboardPage() {
   }, []);
 
   const fetchSessions = () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
-
     setLoading(true);
-    getSessions(userId)
+    getSessions()
       .then((data) => {
         setSessions(data);
         setLoading(false);

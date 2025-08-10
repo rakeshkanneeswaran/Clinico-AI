@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { createSession } from "./action";
 import {
@@ -10,7 +9,6 @@ import {
   Users,
   Settings,
   Plus,
-  User,
   Clock,
   LayoutDashboard,
   Bell,
@@ -47,13 +45,8 @@ export function ModernSidebar() {
   ];
 
   const handleNewSession = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      alert("User ID not found in local storage");
-      return;
-    }
     try {
-      const sessionId = await createSession({ userId });
+      const sessionId = await createSession();
       router.push(`/dashboard/session?session=${sessionId}`);
     } catch (error) {
       console.error("Error creating session:", error);

@@ -1,5 +1,3 @@
-import { c } from "node_modules/framer-motion/dist/types.d-Cjd591yU";
-
 export class RAGService {
     static async storeConversation(transcript: string, sessionId: string): Promise<{ status: string; message: string }> {
         const response = await fetch(`${process.env.RAG_API_URL}/api/delete-and-recreate-vectorstore/`, {
