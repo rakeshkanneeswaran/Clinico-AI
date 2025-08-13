@@ -65,7 +65,7 @@ Patient: Yes, black stools and dizziness.`;
               <ArrowRightLeft className="h-4 w-4 text-white" />
             </div>
             <h2 className="text-lg font-semibold text-foreground">
-              Transcription
+              Your Conversation
             </h2>
           </div>
 

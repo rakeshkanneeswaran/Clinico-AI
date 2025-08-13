@@ -30,6 +30,7 @@ export class RAGService {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                "CLINICO_AI_API_KEY": process.env.CLINICO_AI_API_KEY!,
             },
             body: JSON.stringify({
                 query: query,

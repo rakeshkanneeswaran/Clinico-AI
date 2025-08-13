@@ -1,5 +1,8 @@
 import { prisma, DocumentType } from "../db/index";
 
+
+
+
 interface GenerateTranscriptionResponse {
     s3_file_name: string;
     transcript: string;
@@ -28,6 +31,7 @@ export class DocumentService {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "CLINICO_AI_API_KEY": process.env.CLINICO_AI_API_KEY!,
             },
             body: JSON.stringify({ s3_file_path }),
         });
@@ -72,10 +76,12 @@ export class DocumentService {
         if (!transcript || !document_type) {
             throw new Error("Transcription or document type not provided");
         }
+        console.log("apikey", process.env.CLINICO_AI_API_KEY);
         const response = await fetch(`${process.env.AI_URL}/api/generate-document`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "CLINICO_AI_API_KEY": process.env.CLINICO_AI_API_KEY!,
             },
             body: JSON.stringify({ transcript, document_type }),
         });

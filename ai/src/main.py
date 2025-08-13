@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from service.transcription_service import transcribeS3Audio
@@ -6,6 +7,11 @@ import uvicorn
 from datetime import datetime, timezone
 from core.agents.medical_classification import is_medical_conversation_transcript
 from core.document_generator.answer_generator import answer_query
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CLINICO_AI_API_KEY = os.getenv("CLINICO_AI_API_KEY")
 
 
 class UserData(BaseModel):
@@ -18,6 +24,14 @@ class DocumentData(BaseModel):
 
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def check_api_key(request: Request, call_next):
+    api_key = request.headers.get("CLINICO_AI_API_KEY")
+    if api_key != CLINICO_AI_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return await call_next(request)
 
 
 @app.middleware("http")

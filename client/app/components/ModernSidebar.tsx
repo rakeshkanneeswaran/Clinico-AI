@@ -38,7 +38,11 @@ export function ModernSidebar() {
   ];
 
   const documentationItems = [
-    { icon: BookOpen, label: "Templates Library", link: "/templates" },
+    {
+      icon: BookOpen,
+      label: "Templates Library",
+      link: "/dashboard/template/create",
+    },
     { icon: Users, label: "Community", link: "/community" },
     { icon: Users, label: "Team", link: "/team" },
     { icon: Settings, label: "Settings", link: "/settings" },
@@ -90,17 +94,7 @@ export function ModernSidebar() {
             >
               Clinico AI
             </h1>
-            <p className="text-sm" style={{ color: colors.mutedText }}>
-              Medical Documentation
-            </p>
           </div>
-        </div>
-        <div
-          className="flex items-center gap-2 text-xs"
-          style={{ color: colors.mutedText }}
-        >
-          <Clock className="h-3 w-3" />
-          <span>Today 11:25 PM</span>
         </div>
       </div>
 

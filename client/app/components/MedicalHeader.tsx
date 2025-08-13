@@ -11,10 +11,8 @@ import {
 import { Dispatch, SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
 import { PatientForm } from "./PatientForm";
-import { X } from "lucide-react";
-import { Suspense } from "react";
-
 import {
+  X,
   Mic,
   MicOff,
   MoreVertical,
@@ -22,6 +20,7 @@ import {
   Download,
   User,
 } from "lucide-react";
+import { Suspense } from "react";
 
 interface MedicalHeaderProps {
   isRecording: boolean;
@@ -53,6 +52,10 @@ export function MedicalHeader({
   const [isUploading, setIsUploading] = useState(false);
   const recorderRef = useRef<Recorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animationIdRef = useRef<number | null>(null);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -158,14 +161,59 @@ export function MedicalHeader({
     }
   };
 
+  const drawWaveform = () => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      animationIdRef.current = requestAnimationFrame(draw);
+
+      analyser.getByteTimeDomainData(dataArray);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = colors.primary;
+      ctx.beginPath();
+
+      const sliceWidth = canvas.width / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * canvas.height) / 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        x += sliceWidth;
+      }
+
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+    };
+
+    draw();
+  };
+
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
+      window.AudioContext || (window as any).webkitAudioContext;
     const audioContext = new AudioContextClass();
     audioContextRef.current = audioContext;
+
+    const source = audioContext.createMediaStreamSource(stream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+    analyserRef.current = analyser;
+
+    drawWaveform();
 
     const recorder = new Recorder(audioContext, {});
     await recorder.init(stream);
@@ -178,6 +226,8 @@ export function MedicalHeader({
     const { blob } = await recorderRef.current.stop();
     const url = URL.createObjectURL(blob);
     setAudioURL(url);
+
+    if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
   };
 
   const toggleRecording = () => {
@@ -192,7 +242,6 @@ export function MedicalHeader({
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <>
-        {/* Patient Form Modal Overlay */}
         {showPatientForm && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
@@ -212,7 +261,6 @@ export function MedicalHeader({
           </div>
         )}
 
-        {/* Main Header */}
         <div
           className="border-b p-6 backdrop-blur-sm relative z-10"
           style={{
@@ -232,12 +280,11 @@ export function MedicalHeader({
                 Patient Details
               </Button>
               <span className="text-sm text-gray-500">
-                Click to view and edit patient details
+                &larr; Click to view and edit patient details
               </span>
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Upload Button */}
               <div className="relative">
                 <input
                   type="file"
@@ -260,7 +307,6 @@ export function MedicalHeader({
                 </Button>
               </div>
 
-              {/* Upload Progress Bar */}
               {isUploading && (
                 <div className="w-32 h-2 rounded-full bg-gray-200 overflow-hidden relative animate-pulse">
                   <div
@@ -270,7 +316,6 @@ export function MedicalHeader({
                 </div>
               )}
 
-              {/* Download Recorded Audio */}
               {audioURL && (
                 <a
                   href={audioURL}
@@ -282,7 +327,16 @@ export function MedicalHeader({
                 </a>
               )}
 
-              {/* Recording Status */}
+              {/* Audio Waveform Canvas */}
+              {isRecording && (
+                <canvas
+                  ref={canvasRef}
+                  width={150}
+                  height={40}
+                  className="bg-gray-100 rounded"
+                />
+              )}
+
               <div
                 className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
                   isRecording ? "border" : "bg-muted"
@@ -309,7 +363,6 @@ export function MedicalHeader({
                 )}
               </div>
 
-              {/* Record Button */}
               <Button
                 onClick={toggleRecording}
                 size="icon"
@@ -327,7 +380,6 @@ export function MedicalHeader({
                 )}
               </Button>
 
-              {/* Options Button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -339,7 +391,6 @@ export function MedicalHeader({
             </div>
           </div>
 
-          {/* Feedback */}
           {errorMessage && (
             <p className="text-sm text-red-600 mt-2">{errorMessage}</p>
           )}

@@ -3,7 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Sparkles, Copy, Share } from "lucide-react";
+import {
+  FileText,
+  Download,
+  Sparkles,
+  Copy,
+  Share,
+  ChevronDown,
+} from "lucide-react";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { saveDocument } from "./action";
 import { useSearchParams } from "next/navigation";
@@ -12,6 +19,12 @@ import { generateDocument } from "./action";
 import { getDocumentBySession } from "./action";
 import { CautionComponent } from "./CautionComponent";
 import { Suspense } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DocumentationPanelProps {
   generatedDoc: string;
@@ -153,28 +166,30 @@ export function DocumentationPanel({
     fetchDocument();
   }, [session, activeTab, setGeneratedDoc]);
 
-  const tabs = [
+  const documentTypes = [
     {
-      id: "soap" as const,
+      id: "soap",
       label: "SOAP Notes",
       description: "Structured medical notes",
     },
     {
-      id: "referral" as const,
+      id: "referral",
       label: "Referral",
       description: "Patient referral document",
     },
     {
-      id: "summary" as const,
+      id: "summary",
       label: "Summary",
       description: "Clinical summary",
     },
     {
-      id: "dap" as const,
+      id: "dap",
       label: "DAP Notes",
       description: "Data, Assessment, Plan notes",
     },
   ];
+
+  const currentDocumentType = documentTypes.find((doc) => doc.id === activeTab);
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -207,34 +222,46 @@ export function DocumentationPanel({
           </Badge>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6 p-1 bg-muted/50 rounded-lg">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSelectedDocument(tab.id);
-              }}
-              className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-all duration-300 ${
-                activeTab === tab.id
-                  ? "bg-background text-foreground shadow-lg shadow-[#8db2df]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }`}
-            >
-              <div className="text-center">
-                <div className="font-medium">{tab.label}</div>
-                <div className="text-xs text-muted-foreground">
-                  {tab.description}
-                </div>
-              </div>
-            </button>
-          ))}
+        {/* Document Type Selector */}
+        <div className="flex items-center gap-3 mb-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                {currentDocumentType?.label || "Select Document Type"}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 bg-white">
+              {documentTypes.map((doc) => (
+                <DropdownMenuItem
+                  className="hover:bg-[#ecf5fa]"
+                  key={doc.id}
+                  onClick={() => {
+                    setActiveTab(doc.id as any);
+                    setSelectedDocument(doc.id);
+                  }}
+                >
+                  <div>
+                    <div className="font-medium">{doc.label}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {doc.description}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {currentDocumentType && (
+            <div className="text-sm text-muted-foreground">
+              {currentDocumentType.description}
+            </div>
+          )}
         </div>
 
         {/* Document Display */}
         <div className="relative mb-6">
-          <div className="h-80 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
+          <div className="h-96 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
             {genrating ? (
               <div className="h-full flex flex-col items-center justify-center">
                 <video
@@ -256,7 +283,7 @@ export function DocumentationPanel({
             ) : generatedDoc ? (
               Object.entries(generatedDoc).map(([key, value]) => (
                 <div key={key} className="mb-4">
-                  <h3 className="text-base font-semibold capitalize text-primary mb-1">
+                  <h3 className="text-base font-bold capitalize text-primary mb-1">
                     {key}
                   </h3>
                   <div className="text-sm text-muted-foreground whitespace-pre-wrap">
