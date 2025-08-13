@@ -34,6 +34,10 @@ export class AuthenticationService {
         if (!session || session.expiresAt < new Date()) {
             return false;
         }
+        await prisma.userSession.update({
+            where: { token },
+            data: { expiresAt: new Date(Date.now() + 3600000) },
+        });
 
         return true;
     }
