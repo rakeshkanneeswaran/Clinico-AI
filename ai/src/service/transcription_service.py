@@ -15,6 +15,6 @@ def delete_wav_file(file_path):
 
 def transcribeS3Audio(file_path):
     finally_path = save_wav_from_s3(file_path)
-    transcript, time_taken = fast_transcribe(finally_path, model_size="base")
+    transcript, time_taken = fast_transcribe(finally_path)
     delete_wav_file(finally_path)  # Clean up the local file after transcription
     return transcript

@@ -44,7 +44,9 @@ async def run_on_every_request(request: Request, call_next):
 @app.post("/api/generate-transcription")
 def handle_transcription(user_data: UserData):
     s3_file_name = user_data.s3_file_path
+    print(f"[INFO] 🤖 Transcribing audio file from S3: {s3_file_name}")
     transcript = transcribeS3Audio(s3_file_name)
+    print("[INFO] 🤖 Transcription completed")
     return {
         "message": "File downloaded successfully",
         "s3_file_name": s3_file_name,

@@ -2,14 +2,23 @@ import whisper
 import time
 
 
-def fast_transcribe(audio_file, model_size="tiny"):
+device = "cpu"
+model = whisper.load_model("tiny.en").to(device)
+
+
+def fast_transcribe(audio_file):
     """Direct Whisper transcription without diarization"""
     # Load model (smaller = faster but less accurate)
-    model = whisper.load_model(model_size)
 
     # Time the transcription
     start_time = time.time()
-    result = model.transcribe(audio_file)
+    result = model.transcribe(
+        audio_file,
+        fp16=False,  # Disable FP16 (not needed/supported on MPS)
+        temperature=0.0,  # Faster decoding
+        language="en",  # Optional: specify if you know the language
+        without_timestamps=True,  # Slightly faster
+    )
     elapsed = time.time() - start_time
 
     transcript = []
