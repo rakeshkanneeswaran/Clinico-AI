@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { generateUploadUrl } from "./action";
 import Recorder from "recorder-js";
 import { Button } from "@/components/ui/button";
 import {
@@ -119,36 +120,36 @@ export function MedicalHeader({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + 10;
-      });
-    }, 100);
-
     try {
-      const duration = await getAudioDuration(file);
-      const fileKey = await uploadedFileToS3(file);
+      // 1️⃣ Get a presigned URL from server
+      const presignedUrl = await generateUploadUrl(file.type);
+
+      // 2️⃣ Upload file directly to S3
+      await fetch(presignedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      // 3️⃣ Extract file key from URL for later use
+      const fileKey = new URL(presignedUrl).pathname.substring(1);
+
+      // 4️⃣ Transcription step
       const transcriptionResponse = await generateTranscription(
         fileKey,
         session as string
       );
       setTranscription(transcriptionResponse.transcript);
 
-      setSuccessMessage(
-        `${file.name} uploaded successfully (${Math.round(duration)}s)!`
-      );
+      setSuccessMessage(`${file.name} uploaded successfully!`);
       setUploadProgress(100);
-
       setTimeout(() => onClose(), 1500);
     } catch (error) {
       console.error("Upload error:", error);
       setErrorMessage("Error uploading file.");
     } finally {
-      clearInterval(progressInterval);
       setIsUploading(false);
       setTimeout(() => setUploadProgress(0), 1000);
     }

@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 
 export class S3Service {
@@ -32,5 +33,18 @@ export class S3Service {
             console.error("Error uploading file:", error);
             throw error;
         }
+    }
+
+    static async generateUploadUrl(fileType: string) {
+        const key = this.generateRandomS3BucketName();
+        const command = new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Key: key,
+            ContentType: fileType,
+        });
+
+        // Expires in 60 seconds
+        const url = await getSignedUrl(this.s3Client, command, { expiresIn: 60 });
+        return url;
     }
 }

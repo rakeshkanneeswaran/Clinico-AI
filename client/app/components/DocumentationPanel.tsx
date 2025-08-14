@@ -110,6 +110,7 @@ export function DocumentationPanel({
             setGenrating(false);
             return;
           }
+          // console.log("Document generated successfully:", response);
           setGeneratedDoc(response.data.generated_document);
           setGenrating(false);
           // Play success sound when document is generated
@@ -182,6 +183,12 @@ export function DocumentationPanel({
       label: "Summary",
       description: "Clinical summary",
     },
+    {
+      id: "pie",
+      label: "PIE Notes",
+      description: "Problem, Intervention, Evaluation notes",
+    },
+
     {
       id: "dap",
       label: "DAP Notes",

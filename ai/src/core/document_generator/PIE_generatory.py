@@ -4,11 +4,16 @@ from core.model.llm_schemas import PIE
 
 def generate_PIE(transcript):
     prompt = """
-    You are a medical scribe. Convert this doctor-patient conversation into a PIE note.
+You are a medical clinical scribe. Convert this doctor-patient conversation into a PIE note with EXACTLY these 3 sections:
 
-    **Conversation:**
-    {transcript}
-    """
+1. PROBLEM: The primary medical issue(s) identified (include severity and timing)
+2. INTERVENTION: Specific actions taken to address the problem(s)
+3. EVALUATION: Assessment of the intervention's effectiveness
+
+
+CONVERSATION:
+{transcript}
+"""
 
     try:
         response = generate_llm(PIE).invoke(prompt.format(transcript=transcript))

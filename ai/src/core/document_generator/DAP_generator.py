@@ -4,11 +4,16 @@ from core.model.llm_schemas import DAP
 
 def generate_DAP(transcript):
     prompt = """
-    You are a medical scribe. Convert this doctor-patient conversation into a DAP note.
+You are a medical scribe. Convert this doctor-patient conversation into a DAP note with EXACTLY these 3 sections:
 
-    **Conversation:**
-    {transcript}
-    """
+1. DATA: Relevant clinical facts, observations, and patient-reported information
+2. ASSESSMENT: Professional interpretation of the data including diagnosis/differential
+3. PLAN: Concrete next steps including treatment, referrals, and follow-up
+
+
+CONVERSATION:
+{transcript}
+"""
     response = generate_llm(DAP).invoke(prompt.format(transcript=transcript))
     try:
         dap_json = {

@@ -156,3 +156,13 @@ export async function askQuestion(query: string, sessionId: string): Promise<{ s
     const response = await RAGService.askQuestion(query, sessionId);
     return response;
 }
+
+export async function generateUploadUrl(fileType: string): Promise<string> {
+    await validateSession();
+
+    if (!fileType) {
+        throw new Error("File type not provided");
+    }
+    const response = await S3Service.generateUploadUrl(fileType);
+    return response;
+}

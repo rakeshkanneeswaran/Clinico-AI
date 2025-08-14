@@ -16,4 +16,5 @@ enum DocumentType {
     PRESCRIPTION
     LAB_ORDER
     DAP
+    PIE
 }

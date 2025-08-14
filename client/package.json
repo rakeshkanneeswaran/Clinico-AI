@@ -13,7 +13,8 @@
     "sync": "pnpm install && cd app/data-core/db && npx prisma migrate deploy && npx prisma generate"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.858.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
     "@hookform/resolvers": "^5.2.1",
     "@prisma/client": "6.13.0",
     "@radix-ui/react-accordion": "^1.2.11",
