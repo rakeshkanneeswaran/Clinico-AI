@@ -45,17 +45,25 @@ export async function generateTranscription(s3FileName: string, sessionId: strin
     return response;
 }
 
-export async function saveDocument(data: { documentType: string; content: string, sessionId: string }): Promise<boolean> {
+export async function saveDocument(data: { documentType: string; content: string, sessionId: string, templateId: string, customTemplate: boolean }): Promise<boolean> {
     const user = await validateSession();
+    if (data.customTemplate) {
+        const response = await DocumentService.updateCustomDocument({ templateId: data.templateId, content: data.content });
+        return response.success;
+    }
 
-    const document = await DocumentService.createDocument({
-        ...data,
-        userId: user.id // Add the validated user ID
-    });
-    return document.success;
+    else {
+        const document = await DocumentService.createDocument({
+            ...data,
+            userId: user.id // Add the validated user ID
+        });
+        return document.success;
+    }
+
+
 }
 
-export async function generateDocument({ transcript, document_type }: { transcript: string; document_type: string }): Promise<{
+export async function generateDocument({ transcript, document_type, custom, template_id }: { transcript: string; document_type: string, custom: boolean, template_id: string }): Promise<{
     status: string;
     data: {
         generated_document: string;
@@ -66,7 +74,7 @@ export async function generateDocument({ transcript, document_type }: { transcri
     if (!transcript || !document_type) {
         throw new Error("Transcription or document type not provided");
     }
-    const response = await DocumentService.generateDocument({ transcript, document_type });
+    const response = await DocumentService.generateDocument({ transcript, document_type, custom, template_id });
     return response;
 }
 
@@ -77,6 +85,16 @@ export async function getDocumentBySession({ sessionId, documentType }: { sessio
         throw new Error("Session ID or document type not provided");
     }
     const response = await DocumentService.getDocumentBySession({ sessionId, documentType });
+    return response ? response.content : null;
+}
+
+export async function getCustomDocumentByTemplateId({ templateId }: { templateId: string }): Promise<string | null> {
+    await validateSession();
+
+    if (!templateId) {
+        throw new Error("Template ID not provided");
+    }
+    const response = await DocumentService.getSpecificCustomDocument({ templateId });
     return response ? response.content : null;
 }
 
@@ -165,4 +183,22 @@ export async function generateUploadUrl(fileType: string): Promise<string> {
     }
     const response = await S3Service.generateUploadUrl(fileType);
     return response;
+}
+
+export async function getAllCustomDocumentBySession() {
+    const sessionToken = (await cookies()).get('session_token')?.value;
+    if (!sessionToken) {
+        redirect('/login');
+    }
+    const user = await AuthenticationService.getUserBySession(sessionToken);
+    if (!user) {
+        redirect('/login');
+    }
+
+
+    if (!sessionToken) {
+        throw new Error("Session ID not provided");
+    }
+    const response = await DocumentService.getCustomDocumentBySession({ sessionId: sessionToken });
+    return response ? response : null;
 }

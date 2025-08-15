@@ -9,7 +9,6 @@ import {
   Users,
   Settings,
   Plus,
-  Clock,
   LayoutDashboard,
   Bell,
 } from "lucide-react";
@@ -41,7 +40,7 @@ export function ModernSidebar() {
     {
       icon: BookOpen,
       label: "Templates Library",
-      link: "/dashboard/template/create",
+      link: "/dashboard/template",
     },
     { icon: Users, label: "Community", link: "/community" },
     { icon: Users, label: "Team", link: "/team" },

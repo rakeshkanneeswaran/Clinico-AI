@@ -30,6 +30,8 @@ const Index = () => {
       const response = await generateDocument({
         transcript: transcription,
         document_type: "deep_analysis",
+        custom: false,
+        template_id: "default",
       });
 
       console.log;

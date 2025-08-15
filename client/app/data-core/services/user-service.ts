@@ -28,5 +28,18 @@ export class UserService {
         }
         return user;
     }
+
+    static async getUserIdBySessionId(sessionId: string) {
+        const session = await prisma.userSession.findFirst({
+            where: {
+                token: sessionId
+            }
+        });
+        console.log("Session found:", session);
+        if (!session) {
+            throw new Error("Session not found");
+        }
+        return session.userId;
+    }
 }
 

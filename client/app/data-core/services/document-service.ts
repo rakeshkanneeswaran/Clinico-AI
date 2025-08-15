@@ -1,5 +1,6 @@
-import { prisma, DocumentType } from "../db/index";
-
+import { prisma } from "../db/index";
+import { SessionService } from "./session-service";
+import { UserService } from "./user-service";
 
 
 
@@ -18,7 +19,22 @@ interface GenerateDocumentResponse {
     };
 
 }
+export interface CustomDocument {
+    name: string;
+    description: string;
+    fields: DocumentField[];
+}
 
+interface DocumentField {
+    label: string;
+    description: string;
+}
+
+interface CustomDocumentRequest {
+    transcript: string;
+    document_type: string;
+    fields: DocumentField[];
+}
 export class DocumentService {
 
     static async generateTranscription({ s3_file_path, session_id }: { s3_file_path: string, session_id: string }) {
@@ -70,13 +86,30 @@ export class DocumentService {
         return data;
     }
 
-    static async generateDocument({ transcript, document_type }: { transcript: string; document_type: string }) {
+    static async generateDocument({ transcript, document_type, custom, template_id }: { transcript: string; document_type: string, custom: boolean, template_id: string }) {
         // Call the backend service to generate the document based on the transcription and document type
-        console.log("Generating document for:", document_type);
+        console.log("Generating document for:", document_type, "<>", template_id);
         if (!transcript || !document_type) {
             throw new Error("Transcription or document type not provided");
         }
         console.log("apikey", process.env.CLINICO_AI_API_KEY);
+
+        console.log("custom", custom);
+        if (custom) {
+            const data = await DocumentService.generateCustomDocument({
+                transcript,
+                document_type,
+                template_id
+            });
+
+            return {
+                status: "success",
+                data: {
+                    generated_document: data.data.generated_document
+                }
+            };
+
+        }
         const response = await fetch(`${process.env.AI_URL}/api/generate-document`, {
             method: "POST",
             headers: {
@@ -98,6 +131,7 @@ export class DocumentService {
             }
         }
         const data: GenerateDocumentResponse = await response.json();
+        console.log("Generated document data:", data);
         return {
             status: "success",
             data: {
@@ -112,7 +146,7 @@ export class DocumentService {
         const existingDocument = await prisma.document.findFirst({
             where: {
                 sessionId,
-                type: documentType.toUpperCase() as DocumentType,
+                type: documentType.toUpperCase() as string,
             },
         });
         if (existingDocument) {
@@ -137,7 +171,7 @@ export class DocumentService {
         await prisma.document.create({
             data: {
                 sessionId,
-                type: documentType.toUpperCase() as DocumentType,
+                type: documentType.toUpperCase() as string,
                 content: JSON.stringify(content),
             },
         });
@@ -149,7 +183,7 @@ export class DocumentService {
         const document = await prisma.document.findFirst({
             where: {
                 sessionId,
-                type: documentType.toUpperCase() as DocumentType,
+                type: documentType.toUpperCase() as string,
             },
         });
         if (!document) {
@@ -183,4 +217,191 @@ export class DocumentService {
             content: transcript?.content || "",
         };
     }
+
+    static async createCustomDocument({ sessionId, customDocument }: { sessionId: string; customDocument: CustomDocument }) {
+
+        // Create a new custom document in the database
+        if (!sessionId || !customDocument) {
+            throw new Error("Missing required fields to create custom document");
+        }
+        const userId = await UserService.getUserIdBySessionId(sessionId);
+        if (!userId) {
+            throw new Error("User not found for the given session ID");
+        }
+        const DocumentExists = await prisma.customDocument.findFirst({
+            where: {
+                UserId: userId,
+                DocumentName: customDocument.name,
+            },
+        });
+
+        if (DocumentExists) {
+            console.log("Custom document already exists for user:", userId);
+            return {
+                success: false,
+                message: "Custom document already exists",
+            };
+        }
+
+        // Create Custom Document
+        const customDocumentData = await prisma.customDocument.create({
+            data: {
+                DocumentName: customDocument.name,
+                Description: customDocument.description,
+                UserId: userId,
+                content: "",
+            },
+        });
+
+        // Add fields to the custom document
+        await Promise.all(customDocument.fields.map(field => {
+            return prisma.fields.create({
+                data: {
+                    FieldName: field.label,
+                    FieldDescription: field.description,
+                    customDocumentId: customDocumentData.id,
+                },
+            });
+        }));
+
+        return {
+            success: true,
+        };
+    }
+
+    static async getCustomDocumentBySession({ sessionId }: { sessionId: string }) {
+        const userId = await UserService.getUserIdBySessionId(sessionId);
+        if (!userId) {
+            throw new Error("User not found for the given session ID");
+        }
+
+        console.log("Fetching custom document for user:", userId);
+
+        const customDocument = await prisma.customDocument.findMany({
+            where: {
+                UserId: userId,
+
+            },
+            include: {
+                fields: true,
+            }
+        });
+
+        console.log("Custom document fetched for user:", userId, "Documents:", customDocument);
+
+        return {
+            success: true,
+            customDocument: customDocument,
+        };
+    }
+
+    static async generateCustomDocument({
+        transcript,
+        document_type,
+        template_id
+    }: {
+        transcript: string;
+        document_type: string;
+        template_id: string;
+    }) {
+
+        console.log("Generating custom document using template:", template_id);
+        // 1. First fetch the template
+        const template = await prisma.customDocument.findUnique({
+            where: { id: template_id },
+            include: { fields: true }
+        });
+
+        if (!template) {
+            throw new Error("Template not found");
+        }
+
+        // 2. Prepare the request payload
+        const requestData: CustomDocumentRequest = {
+            transcript,
+            document_type,
+            fields: template.fields.map(field => ({
+                label: field.FieldName,
+                description: field.FieldDescription
+            }))
+        };
+
+        console.log("Generating custom document using template:", template.DocumentName);
+
+        // 3. Call the AI service
+        const response = await fetch(`${process.env.AI_URL}/api/generate-custom-document`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "CLINICO_AI_API_KEY": process.env.CLINICO_AI_API_KEY!,
+            },
+            body: JSON.stringify(requestData),
+        });
+
+        if (!response.ok) {
+            if (response.status === 400) {
+                return {
+                    status: "error",
+                    data: {
+                        generated_document: {
+                            error: "Failed to generate custom document",
+                            details: await response.text()
+                        }
+                    }
+                };
+            }
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // 4. Format the response
+        return {
+            status: "success",
+            data: {
+                generated_document: data.data.generated_document,
+                template_used: {
+                    id: template.id,
+                    name: template.DocumentName
+                }
+            }
+        };
+    }
+
+    static async updateCustomDocument({ templateId, content }: { templateId: string; content: string }) {
+
+        const updatedDocument = await prisma.customDocument.update({
+            where: { id: templateId },
+            data: {
+                content: JSON.stringify(content),
+                updatedAt: new Date(),
+            },
+        });
+
+        console.log("Custom document updated for user:", templateId, "Document:", updatedDocument);
+
+        return {
+            success: true,
+            customDocument: updatedDocument,
+        };
+    }
+
+    static async getSpecificCustomDocument({ templateId }: { templateId: string }) {
+        const customDocument = await prisma.customDocument.findUnique({
+            where: { id: templateId },
+            select: {
+                content: true
+            }
+        });
+
+        if (!customDocument) {
+            throw new Error("Custom document not found");
+        }
+
+        return {
+            success: true,
+            content: customDocument.content,
+        };
+    }
+
 }

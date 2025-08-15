@@ -4,11 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { generateUploadUrl } from "./action";
 import Recorder from "recorder-js";
 import { Button } from "@/components/ui/button";
-import {
-  generateTranscription,
-  uploadedFileToS3,
-  getTranscriptBySession,
-} from "./action";
+import { generateTranscription, getTranscriptBySession } from "./action";
 import { Dispatch, SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
 import { PatientForm } from "./PatientForm";
@@ -91,25 +87,6 @@ export function MedicalHeader({
 
     setErrorMessage(null);
     return true;
-  };
-
-  const getAudioDuration = (file: File): Promise<number> => {
-    return new Promise((resolve) => {
-      const audio = new Audio();
-      const url = URL.createObjectURL(file);
-
-      audio.addEventListener("loadedmetadata", () => {
-        URL.revokeObjectURL(url);
-        resolve(audio.duration);
-      });
-
-      audio.addEventListener("error", () => {
-        URL.revokeObjectURL(url);
-        resolve(0);
-      });
-
-      audio.src = url;
-    });
   };
 
   const handleFileUpload = async (file: File) => {
@@ -203,6 +180,7 @@ export function MedicalHeader({
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const AudioContextClass =
       window.AudioContext || (window as any).webkitAudioContext;
     const audioContext = new AudioContextClass();
