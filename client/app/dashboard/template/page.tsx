@@ -3,6 +3,8 @@
 import { getAllTemplates } from "./actions";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { deleteTemplate } from "./actions";
+import { toast } from "sonner"; // Import toast for notifications
 
 interface TemplateField {
   id: string;
@@ -30,33 +32,56 @@ export default function TemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        setLoading(true);
-        const response = await getAllTemplates();
+  const fetchTemplates = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllTemplates();
 
-        if (response?.success) {
-          // Normalize to always work with an array
-          const docs = Array.isArray(response.customDocument)
-            ? response.customDocument
-            : response.customDocument
-            ? [response.customDocument]
-            : [];
-          setTemplates(docs);
-        } else {
-          setError("Failed to load templates");
-        }
-      } catch (err) {
-        setError("An error occurred while loading templates");
-        console.error("Error fetching templates:", err);
-      } finally {
-        setLoading(false);
+      if (response?.success) {
+        // Normalize to always work with an array
+        const docs = Array.isArray(response.customDocument)
+          ? response.customDocument
+          : response.customDocument
+          ? [response.customDocument]
+          : [];
+        setTemplates(docs);
+      } else {
+        setError("Failed to load templates");
       }
-    };
+    } catch (err) {
+      setError("An error occurred while loading templates");
+      console.error("Error fetching templates:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTemplates();
   }, []);
+
+  const handleDelete = async (templateId: string) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this template? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await deleteTemplate({ templateId });
+      if (response?.success) {
+        toast.success("Template deleted successfully");
+        // Refresh the templates list
+        await fetchTemplates();
+      } else {
+        toast.error("Failed to delete template");
+      }
+    } catch (err) {
+      toast.error("An error occurred while deleting template");
+      console.error("Error deleting template:", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -157,12 +182,15 @@ export default function TemplatesPage() {
                 </td>
                 <td className="py-3 px-4 border-b">
                   <Link
-                    href={`/dashboard/templates/${doc.id}`}
+                    href={`/dashboard/template/${doc.id}`}
                     className="text-blue-600 hover:underline mr-4"
                   >
                     View
                   </Link>
-                  <button className="text-red-600 hover:underline">
+                  <button
+                    className="text-red-600 hover:underline"
+                    onClick={() => handleDelete(doc.id)}
+                  >
                     Delete
                   </button>
                 </td>

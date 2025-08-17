@@ -205,7 +205,8 @@ const DocumentTypeSelector = ({
     </DropdownMenu>
     {currentDocumentType && (
       <div className="text-sm text-muted-foreground">
-        {currentDocumentType.description}
+        {/* {currentDocumentType.description} */}
+        Click Generate to create a new document based.
       </div>
     )}
   </div>

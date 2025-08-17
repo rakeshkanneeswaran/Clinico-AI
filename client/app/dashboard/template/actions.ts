@@ -49,3 +49,25 @@ export async function getAllTemplates() {
         throw new Error("Failed to fetch templates");
     }
 }
+
+export async function deleteTemplate({ templateId }: { templateId: string }) {
+    return DocumentService.deleteCustomDocument({ templateId });
+}
+
+export async function getSpecificCustomDocumentForView({ templateId }: { templateId: string }) {
+    try {
+        const { session } = await getSessions();
+        const result = await DocumentService.getSpecificCustomDocumentForView({ templateId });
+        console.log("Fetched template:", result);
+        return result;
+    } catch (error) {
+        // Check if this is a redirect error
+        if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+            // Let the redirect propagate
+            throw error;
+        }
+
+        console.error("Error in getSpecificCustomDocumentForView:", error);
+        throw new Error("Failed to fetch template");
+    }
+}

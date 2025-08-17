@@ -33,7 +33,7 @@ export function ModernSidebar() {
 
   const generalItems = [
     { icon: LayoutDashboard, label: "Dashboard", link: "/dashboard" },
-    { icon: Bell, label: "Notifications", link: "/notifications" },
+    // { icon: Bell, label: "Notifications", link: "/notifications" },
   ];
 
   const documentationItems = [

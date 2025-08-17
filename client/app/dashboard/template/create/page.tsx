@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,10 +16,7 @@ import {
   ArrowUp,
   ArrowDown,
   Eye,
-  Code,
-  Copy,
   ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -30,10 +27,9 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -45,9 +41,6 @@ interface TemplateField {
   id: string;
   label: string;
   description: string;
-  type?: "text" | "textarea" | "select" | "date";
-  required?: boolean;
-  options?: string[];
 }
 
 export default function TemplateCreatorPage() {
@@ -58,29 +51,18 @@ export default function TemplateCreatorPage() {
   const [editFieldData, setEditFieldData] = useState<Partial<TemplateField>>({
     label: "",
     description: "",
-    type: "text",
-    required: false,
   });
   const [activeTab, setActiveTab] = useState<"editor" | "preview">("editor");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">(
     "desktop"
   );
-  const [showFieldTypes, setShowFieldTypes] = useState(false);
 
   const colors = {
     primary: "#3b82f6",
-    secondary: "#1e293b",
     accent: "#10b981",
     badge: "#6366f1",
     iconBg: "#4f46e5",
   };
-
-  const fieldTypes = [
-    { value: "text", label: "Short Text" },
-    { value: "textarea", label: "Long Text" },
-    { value: "select", label: "Dropdown" },
-    { value: "date", label: "Date" },
-  ];
 
   const addNewField = () => {
     if (!editFieldData.label) {
@@ -97,9 +79,6 @@ export default function TemplateCreatorPage() {
                 ...field,
                 label: editFieldData.label || field.label,
                 description: editFieldData.description || field.description,
-                type: editFieldData.type || "text",
-                required: editFieldData.required || false,
-                options: editFieldData.options || [],
               }
             : field
         )
@@ -111,10 +90,6 @@ export default function TemplateCreatorPage() {
         id: Date.now().toString(),
         label: editFieldData.label || "",
         description: editFieldData.description || "",
-        type: editFieldData.type || "text",
-        required: editFieldData.required || false,
-        options:
-          editFieldData.type === "select" ? ["Option 1", "Option 2"] : [],
       };
       setFields([...fields, newField]);
     }
@@ -122,9 +97,6 @@ export default function TemplateCreatorPage() {
     setEditFieldData({
       label: "",
       description: "",
-      type: "text",
-      required: false,
-      options: [],
     });
   };
 
@@ -133,9 +105,6 @@ export default function TemplateCreatorPage() {
     setEditFieldData({
       label: field.label,
       description: field.description,
-      type: field.type,
-      required: field.required,
-      options: field.options,
     });
   };
 
@@ -144,9 +113,6 @@ export default function TemplateCreatorPage() {
     setEditFieldData({
       label: "",
       description: "",
-      type: "text",
-      required: false,
-      options: [],
     });
   };
 
@@ -195,7 +161,6 @@ export default function TemplateCreatorPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    // Here you would typically send the data to your API
     await createCustomDocument({ customDocumentData: templateData });
     console.log("Saving template:", templateData);
     toast.success("Template saved successfully!");
@@ -235,12 +200,7 @@ export default function TemplateCreatorPage() {
                 fields.map((field) => (
                   <div key={field.id} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor={field.id}>
-                        {field.label}
-                        {field.required && (
-                          <span className="text-destructive ml-1">*</span>
-                        )}
-                      </Label>
+                      <Label htmlFor={field.id}>{field.label}</Label>
                       {field.description && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -268,38 +228,11 @@ export default function TemplateCreatorPage() {
                         </Tooltip>
                       )}
                     </div>
-
-                    {field.type === "text" && (
-                      <Input
-                        id={field.id}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                      />
-                    )}
-
-                    {field.type === "textarea" && (
-                      <Textarea
-                        id={field.id}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                        rows={4}
-                      />
-                    )}
-
-                    {field.type === "select" && (
-                      <select
-                        id={field.id}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {field.options?.map((option, i) => (
-                          <option key={i} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-
-                    {field.type === "date" && (
-                      <Input id={field.id} type="date" className="h-10" />
-                    )}
+                    <Textarea
+                      id={field.id}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      rows={4}
+                    />
                   </div>
                 ))
               )}
@@ -334,13 +267,7 @@ export default function TemplateCreatorPage() {
                 {field.label}
               </h3>
               <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {field.type === "select"
-                  ? `[Selected option from: ${
-                      field.options?.join(", ") || "No options"
-                    }]`
-                  : field.type === "date"
-                  ? "[Date value]"
-                  : `[${field.description || "No content yet"}]`}
+                {field.description || "No content yet"}
               </div>
             </div>
           ))}
@@ -358,11 +285,11 @@ export default function TemplateCreatorPage() {
           </h1>
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
               size="sm"
               onClick={() => {
                 document.location.href = "/dashboard/template";
               }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Back to Templates
@@ -372,13 +299,18 @@ export default function TemplateCreatorPage() {
 
         <Tabs defaultValue="editor" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-xs">
-            <TabsTrigger value="editor" onClick={() => setActiveTab("editor")}>
+            <TabsTrigger
+              value="editor"
+              onClick={() => setActiveTab("editor")}
+              className="data-[state=active]:bg-blue-700 data-[state=active]:text-white"
+            >
               <Pencil className="h-4 w-4 mr-2" />
               Editor
             </TabsTrigger>
             <TabsTrigger
               value="preview"
               onClick={() => setActiveTab("preview")}
+              className="data-[state=active]:bg-blue-700 data-[state=active]:text-white"
             >
               <Eye className="h-4 w-4 mr-2" />
               Preview
@@ -408,8 +340,7 @@ export default function TemplateCreatorPage() {
                     className="gap-1.5"
                     style={{ borderColor: colors.badge, color: colors.badge }}
                   >
-                    <Code className="h-3 w-3" />
-                    Advanced Editor
+                    Simple Editor
                   </Badge>
                 </div>
               </CardHeader>
@@ -456,19 +387,9 @@ export default function TemplateCreatorPage() {
 
                   {/* Field Editor */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        Template Fields
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="field-types-toggle">Field Types</Label>
-                        <Switch
-                          id="field-types-toggle"
-                          checked={showFieldTypes}
-                          onCheckedChange={setShowFieldTypes}
-                        />
-                      </div>
-                    </div>
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Template Fields
+                    </h3>
 
                     <Card className="bg-muted/50 border-border/50">
                       <CardContent className="p-6">
@@ -511,80 +432,6 @@ export default function TemplateCreatorPage() {
                                 className="mt-1"
                               />
                             </div>
-
-                            {showFieldTypes && (
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor="field-type">Field Type</Label>
-                                  <select
-                                    id="field-type"
-                                    value={editFieldData.type || "text"}
-                                    onChange={(e) =>
-                                      /* eslint-disable  @typescript-eslint/no-explicit-any */
-                                      setEditFieldData({
-                                        ...editFieldData,
-                                        type: e.target.value as any,
-                                      })
-                                    }
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
-                                  >
-                                    {fieldTypes.map((type) => (
-                                      <option
-                                        key={type.value}
-                                        value={type.value}
-                                      >
-                                        {type.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div className="flex items-end">
-                                  <div className="flex items-center space-x-2">
-                                    <Switch
-                                      id="field-required"
-                                      checked={editFieldData.required || false}
-                                      onCheckedChange={(checked) =>
-                                        setEditFieldData({
-                                          ...editFieldData,
-                                          required: checked,
-                                        })
-                                      }
-                                    />
-                                    <Label htmlFor="field-required">
-                                      Required Field
-                                    </Label>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {showFieldTypes &&
-                              editFieldData.type === "select" && (
-                                <div>
-                                  <Label htmlFor="field-options">Options</Label>
-                                  <Textarea
-                                    id="field-options"
-                                    value={
-                                      editFieldData.options?.join("\n") || ""
-                                    }
-                                    onChange={(e) =>
-                                      setEditFieldData({
-                                        ...editFieldData,
-                                        options: e.target.value
-                                          .split("\n")
-                                          .filter(Boolean),
-                                      })
-                                    }
-                                    placeholder="Enter each option on a new line"
-                                    rows={3}
-                                    className="mt-1"
-                                  />
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    One option per line
-                                  </p>
-                                </div>
-                              )}
                           </div>
 
                           <div className="flex gap-2">
@@ -620,25 +467,9 @@ export default function TemplateCreatorPage() {
                   {/* Fields List */}
                   {fields.length > 0 && (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-foreground">
-                          Current Fields ({fields.length})
-                        </h4>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground"
-                          onClick={() => {
-                            navigator.clipboard.writeText(
-                              JSON.stringify(fields, null, 2)
-                            );
-                            toast.success("Fields copied to clipboard");
-                          }}
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Fields JSON
-                        </Button>
-                      </div>
+                      <h4 className="text-sm font-medium text-foreground">
+                        Current Fields ({fields.length})
+                      </h4>
 
                       <ScrollArea className="h-[300px] rounded-md border">
                         <div className="space-y-2 p-2">
@@ -650,28 +481,8 @@ export default function TemplateCreatorPage() {
                               <CardContent className="p-4">
                                 <div className="flex justify-between items-start">
                                   <div>
-                                    <div className="font-medium text-foreground flex items-center gap-2">
+                                    <div className="font-medium text-foreground">
                                       {field.label}
-                                      {field.required && (
-                                        <Badge
-                                          variant="outline"
-                                          className="h-5 text-xs"
-                                        >
-                                          Required
-                                        </Badge>
-                                      )}
-                                      {field.type && showFieldTypes && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="h-5 text-xs"
-                                        >
-                                          {
-                                            fieldTypes.find(
-                                              (t) => t.value === field.type
-                                            )?.label
-                                          }
-                                        </Badge>
-                                      )}
                                     </div>
                                     <div className="text-sm text-muted-foreground mt-1">
                                       {field.description || (
@@ -783,36 +594,28 @@ export default function TemplateCreatorPage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Template Preview</h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={previewMode === "desktop" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPreviewMode("desktop")}
-                  >
-                    Desktop
-                  </Button>
-                  <Button
-                    variant={previewMode === "mobile" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPreviewMode("mobile")}
-                  >
-                    Mobile
-                  </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">Template Preview</h2>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={
+                        previewMode === "desktop" ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setPreviewMode("desktop")}
+                    >
+                      Desktop
+                    </Button>
+                    <Button
+                      variant={previewMode === "mobile" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPreviewMode("mobile")}
+                    >
+                      Mobile
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-border/50 shadow-sm">
-                  <CardHeader>
-                    <CardTitle>Form Preview</CardTitle>
-                    <CardDescription>
-                      How the form will look to users
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>{renderPreview()}</CardContent>
-                </Card>
 
                 <Card className="border-border/50 shadow-sm">
                   <CardHeader>
@@ -821,28 +624,36 @@ export default function TemplateCreatorPage() {
                       How the generated document will look
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>{renderGeneratedDoc()}</CardContent>
+                  <CardContent>
+                    <div
+                      className={
+                        previewMode === "mobile" ? "max-w-md mx-auto" : ""
+                      }
+                    >
+                      {renderGeneratedDoc()}
+                    </div>
+                  </CardContent>
                 </Card>
-              </div>
 
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setActiveTab("editor")}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Back to Editor
-                </Button>
-                <Button
-                  onClick={saveTemplate}
-                  className="gap-2"
-                  style={{ backgroundColor: colors.primary }}
-                  disabled={!templateName || fields.length === 0}
-                >
-                  <Save className="h-4 w-4" />
-                  Save Template
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveTab("editor")}
+                    className="gap-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back to Editor
+                  </Button>
+                  <Button
+                    onClick={saveTemplate}
+                    className="gap-2"
+                    style={{ backgroundColor: colors.primary }}
+                    disabled={!templateName || fields.length === 0}
+                  >
+                    <Save className="h-4 w-4" />
+                    Save Template
+                  </Button>
+                </div>
               </div>
             </div>
           )}

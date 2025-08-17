@@ -403,5 +403,36 @@ export class DocumentService {
             content: customDocument.content,
         };
     }
+    static async deleteCustomDocument({ templateId }: { templateId: string }) {
+        const deletedDocument = await prisma.customDocument.delete({
+            where: { id: templateId },
+        });
+
+        console.log("Custom document deleted for user:", templateId, "Document:", deletedDocument);
+
+        return {
+            success: true,
+            message: "Custom document deleted successfully",
+        };
+    }
+
+    static async getSpecificCustomDocumentForView({ templateId }: { templateId: string }) {
+        const customDocument = await prisma.customDocument.findUnique({
+            where: { id: templateId },
+            include: {
+                fields: true
+            }
+
+        });
+
+        if (!customDocument) {
+            throw new Error("Custom document not found");
+        }
+
+        return {
+            success: true,
+            content: customDocument
+        };
+    }
 
 }
