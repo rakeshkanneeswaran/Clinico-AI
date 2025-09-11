@@ -164,30 +164,62 @@ export function TemplateModal({
 }
 
 // DocumentDisplay component for showing the generated document or a loading indicator
+// Replace your existing DocumentDisplay with this
 const DocumentDisplay = ({
   genrating,
   generatedDoc,
 }: {
   genrating: boolean;
   generatedDoc: string;
-}) => (
-  <div className="mb-6">
-    {genrating ? (
-      <div className="flex items-center justify-center py-8">
-        <span className="animate-spin mr-2">⏳</span>
-        Generating document...
-      </div>
-    ) : generatedDoc ? (
-      <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap text-sm">
-        {generatedDoc}
-      </pre>
-    ) : (
-      <div className="text-muted-foreground text-center py-8">
-        No document generated yet.
-      </div>
-    )}
-  </div>
-);
+}) => {
+  let contentToRender: Record<string, string> = {};
+  try {
+    contentToRender = generatedDoc ? JSON.parse(generatedDoc) : {};
+  } catch {
+    contentToRender = { Document: generatedDoc };
+  }
+
+  return (
+    <div className="mb-6">
+      {genrating ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <video
+            src="/ai_animation.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-40 h-40 mb-3"
+          />
+          <p className="text-muted-foreground text-sm">
+            Generating document...
+          </p>
+        </div>
+      ) : generatedDoc ? (
+        <div
+          className="p-4 leading-relaxed text-gray-800 whitespace-pre-wrap rounded-md border"
+          style={{
+            background: `linear-gradient(135deg, ${COLORS.primary}10, ${COLORS.badge}10)`,
+            borderColor: `${COLORS.primary}20`,
+          }}
+        >
+          {Object.entries(contentToRender).map(([key, value]) => (
+            <div key={key} className="mb-4">
+              <span className="font-bold text-xl capitalize block mb-1">
+                {key.replace(/([A-Z])/g, " $1").trim()}
+              </span>
+              <span className="text-gray-700">{value as string}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-muted-foreground text-center py-8">
+          No document generated yet.
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ... keep your LoadingIndicator, DocumentContent, CopyButton as-is ...
 

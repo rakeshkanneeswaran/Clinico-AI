@@ -45,7 +45,7 @@ const UnifiedPanel = () => {
             <button
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${
                 activeTab === "transcript"
-                  ? "border-b-2 border-blue-600 text-blue-600"
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-[#f0f4fc]"
                   : "text-gray-600 hover:text-gray-800"
               }`}
               onClick={() => setActiveTab("transcript")}
@@ -58,7 +58,7 @@ const UnifiedPanel = () => {
             <button
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${
                 activeTab === "documentation"
-                  ? "border-b-2 border-blue-600 text-blue-600"
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-[#f0f4fc]"
                   : "text-gray-600 hover:text-gray-800"
               }`}
               onClick={() => setActiveTab("documentation")}
@@ -71,7 +71,7 @@ const UnifiedPanel = () => {
             <button
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${
                 activeTab === "documents"
-                  ? "border-b-2 border-blue-600 text-blue-600"
+                  ? "border-b-2 border-blue-600 text-blue-600 bg-[#f0f4fc]"
                   : "text-gray-600 hover:text-gray-800"
               }`}
               onClick={() => setActiveTab("documents")}

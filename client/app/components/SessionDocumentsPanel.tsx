@@ -9,12 +9,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Edit } from "lucide-react";
+
+const colors = {
+  primary: "#9d72ff", // purple
+  secondary: "#000000", // black
+  danger: "#ec4444", // red
+  accent: "#10b981",
+  badge: "#6366f1",
+  recordingBg: "#fef2f2",
+};
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface TemplateField {
@@ -126,35 +135,6 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
     }
   };
 
-  const formatContentPreview = (content: string) => {
-    try {
-      let parsed;
-      if (typeof content === "string") parsed = JSON.parse(content);
-      else parsed = content;
-
-      if (typeof parsed === "object") {
-        return (
-          <div className="space-y-1">
-            {Object.entries(parsed).map(([key, value]) => (
-              <div key={key} className="text-xs flex">
-                <span className="font-medium mr-1">{key}:</span>
-                <span className="text-gray-600 truncate">
-                  {typeof value === "string"
-                    ? value.substring(0, 40)
-                    : JSON.stringify(value).substring(0, 40)}
-                  {typeof value === "string" && value.length > 40 ? "..." : ""}
-                </span>
-              </div>
-            ))}
-          </div>
-        );
-      }
-      return content.substring(0, 80) + (content.length > 80 ? "..." : "");
-    } catch {
-      return content.substring(0, 80) + (content.length > 80 ? "..." : "");
-    }
-  };
-
   const handleFieldChange = (fieldName: string, value: string) => {
     setEditedContent((prev) => {
       if (typeof prev === "string") {
@@ -179,18 +159,21 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
 
     if (typeof contentToRender === "object" && contentToRender !== null) {
       return (
-        <div className="space-y-6">
+        <div
+          className="p-4 leading-relaxed text-gray-800 whitespace-pre-wrap rounded-md"
+          style={{
+            background: `linear-gradient(135deg, ${colors.primary}10, ${colors.accent}10)`,
+            borderColor: `${colors.primary}20`,
+          }}
+        >
           {Object.entries(contentToRender).map(([key, value]) => (
-            <div
-              key={key}
-              className="space-y-2 p-4 border rounded-lg bg-gray-50"
-            >
-              <h3 className="text-lg font-semibold text-gray-800 capitalize">
-                {key.replace(/([A-Z])/g, " $1").trim()}
-              </h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {value as string}
-              </p>
+            <div key={key}>
+              <span className="font-bold text-xl capitalize">
+                {key.replace(/([A-Z])/g, " $1").trim()}{" "}
+              </span>
+              <div className="my-1" />
+              <span>{value as string}</span>
+              <div className="my-2" />
             </div>
           ))}
         </div>
@@ -198,8 +181,8 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
     }
 
     return (
-      <div className="p-4 border rounded-lg bg-gray-50">
-        <p className="text-gray-700 whitespace-pre-wrap">{contentToRender}</p>
+      <div className="p-4 leading-relaxed text-gray-800 whitespace-pre-wrap bg-white rounded-md">
+        {contentToRender}
       </div>
     );
   };
@@ -216,7 +199,7 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
           <h3 className="text-lg font-semibold mb-4 text-gray-700">
             Session Documents
           </h3>
-          <div className="space-y-3 max-h-80 overflow-y-auto border rounded-lg p-4 bg-gray-50">
+          <div className="space-y-3 max-h-80 overflow-y-auto  rounded-lg p-4 bg-gray-50">
             {documents.length > 0 ? (
               documents.map((doc) => (
                 <Card
@@ -235,9 +218,7 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </Badge>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {formatContentPreview(doc.content)}
-                  </div>
+
                   <div className="mt-2 text-xs text-gray-400">
                     Last updated: {new Date(doc.updatedAt).toLocaleString()}
                   </div>
@@ -256,7 +237,7 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
 
         {/* Modal for viewing/editing document */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-4xl w-full p-0 bg-white rounded-lg overflow-hidden backdrop-blur-sm">
+          <DialogContent className="max-w-4xl w-full p-0 rounded-lg overflow-hidden">
             <DialogHeader className="p-6 border-b">
               <DialogTitle className="text-xl font-bold">
                 {selectedDoc?.userTemplate?.template?.name || "Medical Note"}
@@ -269,50 +250,57 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger
                       value="view"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-md px-4 py-2 text-gray-600 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-md"
                     >
                       <Eye size={16} />
                       View Mode
                     </TabsTrigger>
                     <TabsTrigger
                       value="edit"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-md px-4 py-2 text-gray-600 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-md"
                     >
                       <Edit size={16} />
                       Edit Mode
                     </TabsTrigger>
                   </TabsList>
 
+                  {/* View Mode */}
                   <TabsContent value="view">
                     {renderBeautifiedContent()}
                     <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
                       <Button
                         onClick={() => setActiveTab("edit")}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        style={{
+                          backgroundColor: colors.secondary,
+                          color: "white",
+                        }}
+                        className="hover:opacity-90"
                       >
                         Edit Document
                       </Button>
                       <Button
-                        variant="outline"
                         onClick={() => setIsModalOpen(false)}
+                        style={{
+                          backgroundColor: colors.secondary,
+                          color: "white",
+                          border: "none",
+                        }}
+                        className="hover:opacity-90"
                       >
                         Close
                       </Button>
                     </div>
                   </TabsContent>
-
+                  {/* Edit Mode */}
                   <TabsContent value="edit">
                     {typeof editedContent === "object" &&
                     editedContent !== null ? (
                       <div className="space-y-6">
                         {Object.entries(editedContent).map(([key, value]) => (
-                          <div
-                            key={key}
-                            className="space-y-2 p-4 border rounded-lg bg-gray-50"
-                          >
+                          <div key={key} className="space-y-2">
                             <Label
                               htmlFor={key}
-                              className="text-base font-medium text-gray-700 capitalize"
+                              className="text-base font-semibold text-gray-800 capitalize"
                             >
                               {key.replace(/([A-Z])/g, " $1").trim()}
                             </Label>
@@ -322,7 +310,7 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
                               onChange={(e) =>
                                 handleFieldChange(key, e.target.value)
                               }
-                              className="min-h-32 text-gray-800 bg-white"
+                              className="min-h-28 text-gray-800 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-400 rounded-lg"
                               placeholder={`Enter ${key
                                 .replace(/([A-Z])/g, " $1")
                                 .toLowerCase()} details...`}
@@ -331,10 +319,10 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
                         ))}
                       </div>
                     ) : (
-                      <div className="space-y-2 p-4 border rounded-lg bg-gray-50">
+                      <div className="space-y-2">
                         <Label
                           htmlFor="content"
-                          className="text-base font-medium text-gray-700"
+                          className="text-base font-semibold text-gray-800"
                         >
                           Content
                         </Label>
@@ -342,23 +330,31 @@ export function SessionDocumentsPanel({ sessionId }: { sessionId: string }) {
                           id="content"
                           value={editedContent}
                           onChange={(e) => setEditedContent(e.target.value)}
-                          className="min-h-48 text-gray-800 bg-white"
+                          className="min-h-48 text-gray-800 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-400 rounded-lg"
                         />
                       </div>
                     )}
 
                     <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
                       <Button
-                        variant="outline"
                         onClick={() => setActiveTab("view")}
-                        className="border-gray-300 text-gray-700"
+                        style={{
+                          backgroundColor: "white",
+                          color: colors.danger,
+                          border: "1px solid " + colors.danger,
+                        }}
+                        className="hover:opacity-90"
                       >
                         Cancel
                       </Button>
                       <Button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        style={{
+                          backgroundColor: colors.secondary,
+                          color: "white",
+                        }}
+                        className="hover:opacity-90"
                       >
                         {isSaving ? "Saving Changes..." : "Save Changes"}
                       </Button>
