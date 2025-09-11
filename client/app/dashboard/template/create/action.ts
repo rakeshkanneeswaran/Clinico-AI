@@ -6,7 +6,20 @@ import { cookies, headers } from "next/headers";
 import { AuthenticationService } from "@/data-core/services/authentication-service";
 import { redirect } from "next/navigation";
 import { DocumentService } from "@/data-core/services/document-service";
-import { CustomDocument } from "@/data-core/services/document-service";
+
+
+export interface Template {
+    name: string;
+    description: string;
+    fields: DocumentField[];
+}
+
+interface DocumentField {
+    name: string;
+    label: string;
+    description: string;
+}
+
 
 export async function getSessions(): Promise<{ id: string; createdAt: Date; updatedAt: Date; patient: { id: string; name: string; age: string; weight: string; height: string; bloodType: string; gender: string; } | null }[]> {
     const heads = await headers();
@@ -41,9 +54,11 @@ export async function getSessions(): Promise<{ id: string; createdAt: Date; upda
     return session;
 }
 
-export async function createCustomDocument({ customDocumentData }: { customDocumentData: CustomDocument }) {
+export async function createTemplate(templateData: {
+    sessionId: string;
+    Template: Template;
+}) {
     const sessionToken = (await cookies()).get('session_token')?.value;
-
     if (!sessionToken) {
         redirect('/login');
     }
@@ -52,15 +67,10 @@ export async function createCustomDocument({ customDocumentData }: { customDocum
         redirect('/login');
     }
     const user = await AuthenticationService.getUserBySession(sessionToken)
-
     if (!user) {
         redirect('/login');
     }
-
-    const createCustomDocument = await DocumentService.createCustomDocument({
-        sessionId: sessionToken,
-        customDocument: customDocumentData,
-    });
-
-    return createCustomDocument;
+    const result = await DocumentService.createTemplate(templateData);
+    return result;
 }
+

@@ -51,7 +51,7 @@ export class SessionService {
 
         const [, , , session] = await prisma.$transaction([
             prisma.patient.deleteMany({ where: { sessionId } }),
-            prisma.document.deleteMany({ where: { sessionId } }),
+            prisma.sessionDocument.deleteMany({ where: { sessionId } }),
             prisma.transcript.deleteMany({ where: { sessionId } }),
             prisma.session.delete({ where: { id: sessionId } }),
         ]);

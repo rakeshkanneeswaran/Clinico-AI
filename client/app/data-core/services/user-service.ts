@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-
+import OnboardingService from "./onBoardingService";
 export class UserService {
     static async createUser(data: { name: string; email: string; password: string }) {
         const { name, email, password } = data;
@@ -17,6 +17,7 @@ export class UserService {
                 password,
             },
         });
+        await OnboardingService.templateOnboarding(user.id);
         return user;
     }
     static async getUserDataByEmail(email: string) {
@@ -30,10 +31,8 @@ export class UserService {
     }
 
     static async getUserIdBySessionId(sessionId: string) {
-        const session = await prisma.userSession.findFirst({
-            where: {
-                token: sessionId
-            }
+        const session = await prisma.session.findUnique({
+            where: { id: sessionId },
         });
         console.log("Session found:", session);
         if (!session) {

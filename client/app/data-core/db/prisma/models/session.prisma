@@ -2,7 +2,7 @@ model Session {
   id         String       @id @default(cuid())
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-  documents  Document[]
+  SessionDocument  SessionDocument[]
   userId     String
   user       User         @relation(fields: [userId], references: [id])
   Transcript Transcript[]

@@ -1,48 +1,32 @@
 import { prisma } from "../db/index";
-import { SessionService } from "./session-service";
 import { UserService } from "./user-service";
+import winston from "winston";
+import { GenerateTranscriptionResponse, Template, GenerateDocumentRequest } from "./types";
 
 
 
-interface GenerateTranscriptionResponse {
-    s3_file_name: string;
-    transcript: string;
-    message: string;
-}
 
-interface GenerateDocumentResponse {
-    status: string;
-    timestamp: string;
-    data: {
-        document_type: string;
-        generated_document: string;
-    };
+const logger = winston.createLogger({
+    level: process.env.NODE_ENV === "development" ? "debug" : "info",
+    format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp(),
+        winston.format.printf(({ level, message, timestamp }) => {
+            return `[${timestamp}] [${level}] ${message}`;
+        })
+    ),
+    transports: [new winston.transports.Console()],
+});
 
-}
-export interface CustomDocument {
-    name: string;
-    description: string;
-    fields: DocumentField[];
-}
-
-interface DocumentField {
-    label: string;
-    description: string;
-}
-
-interface CustomDocumentRequest {
-    transcript: string;
-    document_type: string;
-    fields: DocumentField[];
-}
 export class DocumentService {
 
     static async generateTranscription({ s3_file_path, session_id }: { s3_file_path: string, session_id: string }) {
-        // Call the backend service to process the s3_file_name and return the transcription
-        console.log("Generating transcription for:", s3_file_path);
+        logger.debug(`Starting transcription generation for file: ${s3_file_path}, session: ${session_id}`);
+
         if (!s3_file_path) {
             throw new Error("No S3 file name provided");
         }
+
         const response = await fetch(`${process.env.AI_URL}/api/generate-transcription`, {
             method: "POST",
             headers: {
@@ -55,280 +39,186 @@ export class DocumentService {
         if (!response.ok) {
             throw new Error("Failed to generate transcription");
         }
+
         const data: GenerateTranscriptionResponse = await response.json();
-        const transcriptExists = await prisma.transcript.findFirst({
-            where: {
-                sessionId: session_id,
-            },
-        });
+        const transcriptExists = await prisma.transcript.findFirst({ where: { sessionId: session_id } });
 
         if (transcriptExists) {
+            logger.debug(`Updating existing transcript for session: ${session_id}`);
             await prisma.transcript.update({
-                where: {
-                    id: transcriptExists.id,
-                },
-                data: {
-
-                    content: data.transcript,
-
-                },
+                where: { id: transcriptExists.id },
+                data: { content: data.transcript },
             });
-        }
-        else {
+        } else {
+            logger.debug(`Creating new transcript entry for session: ${session_id}`);
             await prisma.transcript.create({
-                data: {
-                    sessionId: session_id,
-                    content: data.transcript,
-                }
+                data: { sessionId: session_id, content: data.transcript },
             });
         }
 
+        logger.info(`Transcription successfully generated for session: ${session_id}`);
         return data;
     }
 
-    static async generateDocument({ transcript, document_type, custom, template_id }: { transcript: string; document_type: string, custom: boolean, template_id: string }) {
-        // Call the backend service to generate the document based on the transcription and document type
-        console.log("Generating document for:", document_type, "<>", template_id);
-        if (!transcript || !document_type) {
-            throw new Error("Transcription or document type not provided");
+    static async createTemplate(templateData: { sessionId: string; Template: Template }) {
+        if (!templateData.sessionId || !templateData.Template) {
+            throw new Error("Missing required fields to create custom document");
         }
-        console.log("apikey", process.env.CLINICO_AI_API_KEY);
 
-        console.log("custom", custom);
-        if (custom) {
-            const data = await DocumentService.generateCustomDocument({
-                transcript,
-                document_type,
-                template_id
-            });
-
-            return {
-                status: "success",
-                data: {
-                    generated_document: data.data.generated_document
-                }
-            };
-
+        const userId = await UserService.getUserIdBySessionId(templateData.sessionId);
+        if (!userId) {
+            throw new Error("User not found for the given session ID");
         }
-        const response = await fetch(`${process.env.AI_URL}/api/generate-document`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "CLINICO_AI_API_KEY": process.env.CLINICO_AI_API_KEY!,
-            },
-            body: JSON.stringify({ transcript, document_type }),
+
+        const TemplateExisits = await prisma.template.findFirst({
+            where: { name: templateData.Template.name },
         });
 
-        if (!response.ok) {
+        if (TemplateExisits) {
+            logger.warn(`Template "${templateData.Template.name}" already exists for user: ${userId}`);
+            return { success: false, message: "Template already exists" };
+        }
 
-            if (response.status === 400) {
-                return {
-                    status: "error",
+        await prisma.$transaction(async (tx) => {
+            const createdTemplate = await tx.template.create({
+                data: {
+                    name: templateData.Template.name,
+                    description: templateData.Template.description,
+                },
+            });
+
+            templateData.Template.fields.forEach(async (field) => {
+                await tx.field.create({
                     data: {
-                        generated_document: "transcription not related to medical conversation",
-                    }
-                };
-            }
-        }
-        const data: GenerateDocumentResponse = await response.json();
-        console.log("Generated document data:", data);
-        return {
-            status: "success",
-            data: {
-                generated_document: data.data.generated_document
-            }
-        }
+                        name: field.label,
+                        description: field.description,
+                        templateId: createdTemplate.id,
+                    },
+                });
+            });
+
+            await tx.userTemplate.create({
+                data: { userId: userId, templateId: createdTemplate.id },
+            });
+        });
+
+        logger.info(`Template "${templateData.Template.name}" successfully created for user: ${userId}`);
+        return { success: true, message: "Template created successfully" };
     }
 
-    static async createDocument({ sessionId, userId, documentType, content }: { sessionId: string; userId: string; documentType: string; content: string }) {
-        // Create a new document in the database
-        // check if  document already exists for the same documentType and sessionId
-        const existingDocument = await prisma.document.findFirst({
-            where: {
-                sessionId,
-                type: documentType.toUpperCase() as string,
+    static async getAllUserTemplates({ sessionId }: { sessionId: string }) {
+        const userId = await UserService.getUserIdBySessionId(sessionId);
+        if (!userId) {
+            throw new Error("User not found for the given session ID");
+        }
+
+        const userTemplates = await prisma.userTemplate.findMany({
+            where: { userId },
+            select: {
+                id: true,
+                template: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                    },
+                },
             },
         });
-        if (existingDocument) {
-            console.log("Document already exists, updating content for session:", sessionId);
-            await prisma.document.update({
-                where: {
-                    id: existingDocument.id,
-                },
-                data: {
-                    content: JSON.stringify(content),
-                },
-            });
+        logger.debug(`Fetched ${userTemplates.length} templates for user: ${userId}`);
+        return userTemplates;
+    }
 
-            return {
-                success: true,
-            };
-        }
-        console.log("Creating document for session:", sessionId);
-        if (!sessionId || !userId || !documentType || !content) {
+
+
+    static async createSessionDocument({ sessionId, userId, userTemplateId, content }: { sessionId: string; userId: string; userTemplateId: string; content: string }) {
+        logger.debug(`Creating session document for session: ${sessionId}, user: ${userId}`);
+
+        if (!sessionId || !userId || !content) {
             throw new Error("Missing required fields to create document");
         }
-        await prisma.document.create({
+
+        await prisma.sessionDocument.create({
             data: {
                 sessionId,
-                type: documentType.toUpperCase() as string,
+                userTemplateId,
                 content: JSON.stringify(content),
             },
         });
-        return {
-            success: true,
-        };
+
+        logger.info(`Session document created for session: ${sessionId}, user: ${userId}`);
+        return { success: true, message: "Session document created successfully" };
     }
-    static async getDocumentBySession({ sessionId, documentType }: { sessionId: string, documentType: string }) {
-        const document = await prisma.document.findFirst({
-            where: {
-                sessionId,
-                type: documentType.toUpperCase() as string,
-            },
+
+    static async getSessionDocumentById({ sessionId, sessionDocumentId }: { sessionId: string, sessionDocumentId: string }) {
+        const sessionDocument = await prisma.sessionDocument.findFirst({
+            where: { sessionId, id: sessionDocumentId },
         });
-        if (!document) {
-            console.log("No document found for session:", sessionId, "and type:", documentType, "returning empty content");
-            return {
-                success: true,
-                content: "",
-            };
+
+        if (!sessionDocument) {
+            logger.warn(`No document found for session: ${sessionId}, documentId: ${sessionDocumentId}`);
+            return { success: true, content: "" };
         }
-        return {
-            success: true,
-            content: document?.content || "",
-        };
+
+        logger.debug(`Fetched document for session: ${sessionId}, documentId: ${sessionDocumentId}`);
+        return { success: true, content: sessionDocument?.content || "" };
     }
 
     static async getTranscriptBySession({ sessionId }: { sessionId: string }) {
-        const transcript = await prisma.transcript.findFirst({
-            where: {
-                sessionId,
-            },
-        });
+        const transcript = await prisma.transcript.findFirst({ where: { sessionId } });
+
         if (!transcript) {
-            console.log("No transcript found for session:", sessionId, "returning empty content");
-            return {
-                success: true,
-                content: "",
-            };
+            logger.warn(`No transcript found for session: ${sessionId}`);
+            return { success: true, content: "" };
         }
-        return {
-            success: true,
-            content: transcript?.content || "",
-        };
+
+        logger.debug(`Transcript fetched for session: ${sessionId}`);
+        return { success: true, content: transcript?.content || "" };
     }
 
-    static async createCustomDocument({ sessionId, customDocument }: { sessionId: string; customDocument: CustomDocument }) {
+    static async generateSessionDocument({
+        transcript,
+        userTemplateId,
+        sessionId,
+    }: {
+        transcript: string;
+        userTemplateId: string;
+        sessionId: string;
+    }) {
+        logger.debug(`Generating session document for session: ${sessionId}, template: ${userTemplateId}`);
 
-        // Create a new custom document in the database
-        if (!sessionId || !customDocument) {
-            throw new Error("Missing required fields to create custom document");
-        }
-        const userId = await UserService.getUserIdBySessionId(sessionId);
-        if (!userId) {
-            throw new Error("User not found for the given session ID");
-        }
-        const DocumentExists = await prisma.customDocument.findFirst({
-            where: {
-                UserId: userId,
-                DocumentName: customDocument.name,
-            },
-        });
 
-        if (DocumentExists) {
-            console.log("Custom document already exists for user:", userId);
-            return {
-                success: false,
-                message: "Custom document already exists",
-            };
-        }
-
-        // Create Custom Document
-        const customDocumentData = await prisma.customDocument.create({
-            data: {
-                DocumentName: customDocument.name,
-                Description: customDocument.description,
-                UserId: userId,
-                content: "",
-            },
-        });
-
-        // Add fields to the custom document
-        await Promise.all(customDocument.fields.map(field => {
-            return prisma.fields.create({
-                data: {
-                    FieldName: field.label,
-                    FieldDescription: field.description,
-                    customDocumentId: customDocumentData.id,
-                },
-            });
-        }));
-
-        return {
-            success: true,
-        };
-    }
-
-    static async getCustomDocumentBySession({ sessionId }: { sessionId: string }) {
-        const userId = await UserService.getUserIdBySessionId(sessionId);
-        if (!userId) {
-            throw new Error("User not found for the given session ID");
-        }
-
-        console.log("Fetching custom document for user:", userId);
-
-        const customDocument = await prisma.customDocument.findMany({
-            where: {
-                UserId: userId,
-
-            },
-            include: {
-                fields: true,
+        const userTemplate = await prisma.userTemplate.findFirst({
+            where: { id: userTemplateId },
+            select: {
+                template: {
+                    select: {
+                        name: true,
+                        id: true,
+                        fields: true
+                    }
+                }
             }
         });
 
-        console.log("Custom document fetched for user:", userId, "Documents:", customDocument);
+        console.log("Template fetched:", userTemplate);
 
-        return {
-            success: true,
-            customDocument: customDocument,
-        };
-    }
-
-    static async generateCustomDocument({
-        transcript,
-        document_type,
-        template_id
-    }: {
-        transcript: string;
-        document_type: string;
-        template_id: string;
-    }) {
-
-        console.log("Generating custom document using template:", template_id);
-        // 1. First fetch the template
-        const template = await prisma.customDocument.findUnique({
-            where: { id: template_id },
-            include: { fields: true }
-        });
-
-        if (!template) {
+        if (!userTemplate) {
             throw new Error("Template not found");
         }
 
-        // 2. Prepare the request payload
-        const requestData: CustomDocumentRequest = {
+        const requestData: GenerateDocumentRequest = {
             transcript,
-            document_type,
-            fields: template.fields.map(field => ({
-                label: field.FieldName,
-                description: field.FieldDescription
+            document_type: userTemplate.template.name,
+            fields: userTemplate.template.fields.map(field => ({
+                name: field.name,
+                label: field.name,
+                description: field.description
             }))
         };
 
-        console.log("Generating custom document using template:", template.DocumentName);
+        logger.debug(`Sending transcript to AI for document generation using template: ${userTemplate.template.name}`);
 
-        // 3. Call the AI service
         const response = await fetch(`${process.env.AI_URL}/api/generate-custom-document`, {
             method: "POST",
             headers: {
@@ -340,6 +230,7 @@ export class DocumentService {
 
         if (!response.ok) {
             if (response.status === 400) {
+                logger.error(`AI service failed to generate custom document for session: ${sessionId}`);
                 return {
                     status: "error",
                     data: {
@@ -355,84 +246,153 @@ export class DocumentService {
 
         const data = await response.json();
 
-        // 4. Format the response
+        logger.info(`Custom document generated successfully for session: ${sessionId}, template: ${userTemplate.template.name}`);
         return {
             status: "success",
             data: {
                 generated_document: data.data.generated_document,
-                template_used: {
-                    id: template.id,
-                    name: template.DocumentName
+                template_used: { id: userTemplate.template.id, name: userTemplate.template.name }
+            }
+        };
+    }
+
+
+
+    static async getSpecificSessionDocument({ sessionId, sessionDocumentId }: { sessionId: string; sessionDocumentId: string }) {
+        const sessionDocument = await prisma.sessionDocument.findUnique({
+            where: { id: sessionDocumentId, sessionId: sessionId },
+            select: { content: true }
+        });
+
+        if (!sessionDocument) {
+            throw new Error("Session document not found");
+        }
+
+        logger.debug(`Fetched specific document for session: ${sessionId}, documentId: ${sessionDocumentId}`);
+        return { success: true, content: sessionDocument.content };
+    }
+
+    static async deleteSessionDocument({ sessionId, sessionDocumentId }: { sessionId: string; sessionDocumentId: string }) {
+        const deletedDocument = await prisma.sessionDocument.delete({
+            where: { id: sessionDocumentId, sessionId: sessionId },
+        });
+
+        logger.info(`Session document deleted for session: ${sessionId}, documentId: ${sessionDocumentId}`);
+        return { success: true, message: "Session document deleted successfully" };
+    }
+
+    static async saveSessionDocument({ sessionId, content, sessionDocumentId, userTemplateId }: { sessionId: string; content: string; sessionDocumentId: string; userTemplateId: string }) {
+
+        // check if the document already exists
+        const existingDocument = await prisma.sessionDocument.findFirst({
+            where: { id: sessionDocumentId, sessionId: sessionId, userTemplateId: userTemplateId },
+        });
+
+        if (existingDocument) {
+            // update the existing document
+            const updatedDocument = await prisma.sessionDocument.update({
+                where: { id: sessionDocumentId },
+                data: { content: JSON.stringify(content), updatedAt: new Date() },
+            });
+            logger.info(`Session document updated for session: ${sessionId}, documentId: ${sessionDocumentId}`);
+            return { success: true, message: "Session document updated successfully", sessionDocument: updatedDocument };
+        }
+        else {
+            // create a new document
+            const newDocument = await prisma.sessionDocument.create({
+                data: {
+                    sessionId,
+                    userTemplateId,
+                    content: JSON.stringify(content),
+                },
+            });
+            logger.info(`Session document created for session: ${sessionId}, documentId: ${newDocument.id}`);
+            return { success: true, message: "Session document created successfully", sessionDocument: newDocument };
+        }
+
+    }
+
+    static async getAllSessionDocuments({ sessionId }: { sessionId: string }) {
+        const sessionDocuments = await prisma.sessionDocument.findMany({
+            where: { sessionId },
+            include: {
+                userTemplate: {
+                    select: {
+                        template: {
+                            select:
+                            {
+                                name: true,
+                                description: true,
+                                fields: true
+                            }
+                        }
+                    }
                 }
             }
-        };
+
+        });
+        return sessionDocuments;
     }
 
-    static async updateCustomDocument({ templateId, content }: { templateId: string; content: string }) {
-
-        const updatedDocument = await prisma.customDocument.update({
-            where: { id: templateId },
-            data: {
-                content: JSON.stringify(content),
-                updatedAt: new Date(),
+    static async getAllCreatedTemplatesByUserId({ userId }: { userId: string }) {
+        const templates = await prisma.template.findMany({
+            where: {
+                userTemplates: {
+                    some: {
+                        userId: userId
+                    }
+                }
             },
-        });
-
-        console.log("Custom document updated for user:", templateId, "Document:", updatedDocument);
-
-        return {
-            success: true,
-            customDocument: updatedDocument,
-        };
-    }
-
-    static async getSpecificCustomDocument({ templateId }: { templateId: string }) {
-        const customDocument = await prisma.customDocument.findUnique({
-            where: { id: templateId },
-            select: {
-                content: true
-            }
-        });
-
-        if (!customDocument) {
-            throw new Error("Custom document not found");
-        }
-
-        return {
-            success: true,
-            content: customDocument.content,
-        };
-    }
-    static async deleteCustomDocument({ templateId }: { templateId: string }) {
-        const deletedDocument = await prisma.customDocument.delete({
-            where: { id: templateId },
-        });
-
-        console.log("Custom document deleted for user:", templateId, "Document:", deletedDocument);
-
-        return {
-            success: true,
-            message: "Custom document deleted successfully",
-        };
-    }
-
-    static async getSpecificCustomDocumentForView({ templateId }: { templateId: string }) {
-        const customDocument = await prisma.customDocument.findUnique({
-            where: { id: templateId },
             include: {
-                fields: true
+                fields: true,
+                userTemplates: true
+
             }
 
         });
-
-        if (!customDocument) {
-            throw new Error("Custom document not found");
-        }
-
-        return {
-            success: true,
-            content: customDocument
-        };
+        return templates;
     }
 
+    static async deleteTemplate({ userTemplateId }: { userTemplateId: string }) {
+        return prisma.$transaction(async (tx) => {
+            // Step 1: Ensure the userTemplate exists and fetch its template + relations
+            const userTemplate = await tx.userTemplate.findFirst({
+                where: { id: userTemplateId },
+                include: { template: { include: { userTemplates: true } } },
+            });
+
+            if (!userTemplate) {
+                throw new Error("User template not found");
+            }
+
+            const templateId = userTemplate.templateId;
+
+            // Step 2: Delete all session documents linked to this userTemplate
+            await tx.sessionDocument.deleteMany({
+                where: { userTemplateId },
+            });
+
+            // Step 3: Delete the userTemplate itself
+            await tx.userTemplate.delete({
+                where: { id: userTemplateId },
+            });
+
+            // Step 4: If no other userTemplates exist for this template, clean it up fully
+            if (userTemplate.template.userTemplates.length === 1) {
+                // Delete fields attached to the template
+                await tx.field.deleteMany({
+                    where: { templateId },
+                });
+
+                // Delete the template itself
+                await tx.template.delete({
+                    where: { id: templateId },
+                });
+            }
+
+            return { success: true, message: "Template deleted successfully" };
+        });
+    }
 }
+
+

@@ -1,30 +1,21 @@
 import { prisma } from "../db";
+import { PatientInput, Patient, PatientResponse } from "./types";
 
 export class PatientService {
-    static async createPatient(data: {
-        name: string;
-        age: string;
-        gender: string;
-        weight: string;
-        height: string;
-        bloodType: string;
-        sessionId: string
-    }) {
-
+    static async createPatient(data: PatientInput): Promise<Patient> {
         try {
             const sessionExists = await prisma.session.findUnique({
-                where: {
-                    id: data.sessionId,
-                },
+                where: { id: data.sessionId },
             });
+
             if (!sessionExists) {
                 throw new Error("Session does not exist");
             }
+
             const existingPatient = await prisma.patient.findFirst({
-                where: {
-                    sessionId: data.sessionId,
-                },
+                where: { sessionId: data.sessionId },
             });
+
             if (existingPatient) {
                 const patient = await prisma.patient.update({
                     where: { id: existingPatient.id },
@@ -37,6 +28,7 @@ export class PatientService {
                         bloodType: data.bloodType,
                     },
                 });
+
                 return {
                     id: patient.id,
                     name: patient.name,
@@ -47,6 +39,7 @@ export class PatientService {
                     bloodType: patient.bloodType,
                 };
             }
+
             const patient = await prisma.patient.create({
                 data: {
                     name: data.name,
@@ -57,8 +50,8 @@ export class PatientService {
                     bloodType: data.bloodType,
                     sessionId: data.sessionId,
                 },
-
             });
+
             return {
                 id: patient.id,
                 name: patient.name,
@@ -71,18 +64,13 @@ export class PatientService {
         } catch (error) {
             console.error("Error creating patient:", error);
             throw new Error("Failed to create patient");
-
         }
-
     }
 
-    static async getPatientBySessionId(sessionId: string) {
+    static async getPatientBySessionId(sessionId: string): Promise<PatientResponse> {
         try {
-            const patient = await prisma.patient.findFirst({
-                where: {
-                    sessionId: sessionId,
-                },
-            });
+            const patient = await prisma.patient.findFirst({ where: { sessionId } });
+
             if (!patient) {
                 return {
                     id: "",
@@ -92,8 +80,9 @@ export class PatientService {
                     weight: "",
                     height: "",
                     bloodType: "",
-                }
+                };
             }
+
             return {
                 id: patient.id,
                 name: patient.name,
@@ -109,5 +98,3 @@ export class PatientService {
         }
     }
 }
-
-export default PatientService;

@@ -5,35 +5,27 @@ import {
   useState,
   useEffect,
   Suspense,
-  SetStateAction,
   Dispatch,
-  use,
+  SetStateAction,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  FileText,
-  Download,
-  Sparkles,
-  Copy,
-  Share,
-  ChevronDown,
-} from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FileText, Download, Sparkles, Copy, Share, Plus } from "lucide-react";
+
 import { CautionComponent } from "./CautionComponent";
+import TemplateForm from "./TemplateForm";
 import {
-  saveDocument,
   generateDocument,
-  getDocumentBySession,
-  getAllCustomDocumentBySession,
-  getCustomDocumentByTemplateId,
+  saveDocument,
+  getSessionDocumentById,
+  getAllUserTemplates,
 } from "./action";
 
 // ============ Types ============
@@ -45,83 +37,32 @@ interface DocumentationPanelProps {
   transcription: string;
 }
 
-interface DocumentType {
+interface UserTemplate {
   id: string;
-  label: string;
-  description: string;
-  custom: boolean;
+  template: {
+    id: string;
+    name: string;
+    description: string;
+  };
 }
 
-interface CustomDocumentField {
+interface SessionDocument {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  FieldName: string;
-  FieldDescription: string;
-  customDocumentId: string | null;
-}
-
-interface CustomDocumentBase {
-  id: string;
-  UserId: string | null;
-  DocumentName: string;
-  Description: string;
   content: string;
+  userTemplateId: string;
   createdAt: Date;
   updatedAt: Date;
-  custom: boolean;
-  fields: CustomDocumentField[];
 }
-
-type CustomDocumentResponse = {
-  success: boolean;
-  customDocument: CustomDocumentBase[] | null;
-} | null;
 
 // ============ Constants ============
 const COLORS = {
   primary: "#3b82f6",
-  secondary: "#000000",
-  accent: "#10b981",
   badge: "#6366f1",
   iconBg: "#4f46e5",
 };
 
-const HARDCODED_DOCUMENT_TYPES: DocumentType[] = [
-  {
-    id: "soap",
-    label: "SOAP",
-    description: "Structured medical notes",
-    custom: false,
-  },
-  {
-    id: "referral",
-    label: "Referral",
-    description: "Patient referral document",
-    custom: false,
-  },
-  {
-    id: "summary",
-    label: "Summary",
-    description: "Clinical summary",
-    custom: false,
-  },
-  {
-    id: "pie",
-    label: "PIE",
-    description: "Problem, Intervention, Evaluation notes",
-    custom: false,
-  },
-  {
-    id: "dap",
-    label: "DAP",
-    description: "Data, Assessment, Plan notes",
-    custom: false,
-  },
-];
-
 // ============ Helper Components ============
-const DocumentHeader = () => (
+const DocumentHeader = ({ onOpenModal }: { onOpenModal: () => void }) => (
   <div className="flex items-center justify-between mb-6">
     <div className="flex items-center gap-3">
       <div
@@ -139,206 +80,149 @@ const DocumentHeader = () => (
         </p>
       </div>
     </div>
-    <Badge
-      variant="outline"
-      className="gap-1.5"
-      style={{ borderColor: COLORS.badge, color: COLORS.badge }}
-    >
-      <Sparkles className="h-3 w-3" />
-      AI Enhanced
-    </Badge>
+    <div className="flex gap-2">
+      <Button variant="outline" className="gap-2" onClick={onOpenModal}>
+        <Plus className="h-4 w-4" />
+        Create / Select Template
+      </Button>
+      <Badge
+        variant="outline"
+        className="gap-1.5"
+        style={{ borderColor: COLORS.badge, color: COLORS.badge }}
+      >
+        <Sparkles className="h-3 w-3" />
+        AI Enhanced
+      </Badge>
+    </div>
   </div>
 );
 
-const TemplateModeToggle = ({
-  useCustomDocs,
-  setUseCustomDocs,
+export function TemplateModal({
+  isOpen,
+  onClose,
+  templates,
+  setCurrentTemplate,
 }: {
-  useCustomDocs: boolean;
-  setUseCustomDocs: (value: boolean) => void;
-}) => (
-  <div className="flex items-center gap-2 mb-4">
-    <span className="text-sm text-muted-foreground">Standard</span>
-    <Switch checked={useCustomDocs} onCheckedChange={setUseCustomDocs} />
-    <span className="text-sm text-muted-foreground">Custom</span>
-  </div>
-);
+  isOpen: boolean;
+  onClose: () => void;
+  templates: UserTemplate[];
+  setCurrentTemplate: (tpl: UserTemplate) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
 
-const DocumentTypeSelector = ({
-  documentTypes,
-  currentDocumentType,
-  setActiveTab,
-  setSelectedDocument,
-}: {
-  documentTypes: DocumentType[];
-  currentDocumentType?: DocumentType;
-  setActiveTab: (tab: string) => void;
-  setSelectedDocument: (doc: string) => void;
-}) => (
-  <div className="flex items-center gap-3 mb-6">
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          {currentDocumentType?.label || "Select Document Type"}
-          <ChevronDown className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-white">
-        {documentTypes.map((doc) => (
-          <DropdownMenuItem
-            key={doc.id}
-            className="hover:bg-[#ecf5fa]"
-            onClick={() => {
-              setActiveTab(doc.id);
-              setSelectedDocument(doc.id);
-            }}
-          >
-            <div>
-              <div className="font-medium">{doc.label}</div>
-              <div className="text-xs text-muted-foreground">
-                {doc.description}
-              </div>
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl min-h-[80vh] backdrop-blur-md">
+        {!showForm ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Select or Create Template</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {templates.length > 0 ? (
+                templates.map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    onClick={() => {
+                      setCurrentTemplate(tpl);
+                      onClose();
+                    }}
+                    className="p-3 border rounded-lg cursor-pointer hover:bg-[#ecf5fa]"
+                  >
+                    <div className="font-medium">{tpl.template.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {tpl.template.description}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No templates available.</p>
+              )}
             </div>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-    {currentDocumentType && (
-      <div className="text-sm text-muted-foreground">
-        {/* {currentDocumentType.description} */}
-        Click Generate to create a new document based.
+            <div className="pt-4 flex justify-end">
+              <Button onClick={() => setShowForm(true)}>
+                Create New Template
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="w-full max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Template</DialogTitle>
+            </DialogHeader>
+            <TemplateForm />
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={() => setShowForm(false)}>
+                Back to Templates
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// DocumentDisplay component for showing the generated document or a loading indicator
+const DocumentDisplay = ({
+  genrating,
+  generatedDoc,
+}: {
+  genrating: boolean;
+  generatedDoc: string;
+}) => (
+  <div className="mb-6">
+    {genrating ? (
+      <div className="flex items-center justify-center py-8">
+        <span className="animate-spin mr-2">⏳</span>
+        Generating document...
+      </div>
+    ) : generatedDoc ? (
+      <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap text-sm">
+        {generatedDoc}
+      </pre>
+    ) : (
+      <div className="text-muted-foreground text-center py-8">
+        No document generated yet.
       </div>
     )}
   </div>
 );
 
-const DocumentDisplay = ({
-  genrating,
-  generatedDoc,
-  renderValue,
-}: {
-  genrating: boolean;
-  generatedDoc: string;
-  renderValue: (value: unknown) => React.ReactNode;
-}) => (
-  <div className="relative mb-6">
-    <div className="h-96 overflow-y-auto bg-background/50 border border-border/50 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap text-foreground">
-      {genrating ? (
-        <LoadingIndicator />
-      ) : generatedDoc ? (
-        <DocumentContent
-          generatedDoc={generatedDoc}
-          renderValue={renderValue}
-        />
-      ) : (
-        <EmptyState />
-      )}
-    </div>
-    {!genrating && generatedDoc && <CopyButton />}
-  </div>
-);
+// ... keep your LoadingIndicator, DocumentContent, CopyButton as-is ...
 
-const LoadingIndicator = () => (
-  <div className="h-full flex flex-col items-center justify-center">
-    <video autoPlay loop muted playsInline className="object-contain">
-      <source src="/loading.webm" type="video/webm" />
-      Generating document...
-    </video>
-    <p className="mt-4 text-muted-foreground">
-      AI is generating your document...
-    </p>
-  </div>
-);
-
-const DocumentContent = ({
-  generatedDoc,
-  renderValue,
-}: {
-  generatedDoc: string;
-  renderValue: (value: unknown) => React.ReactNode;
-}) => (
-  <>
-    {Object.entries(generatedDoc).map(([key, value]) => (
-      <div key={key} className="mb-4">
-        <h3 className="text-base font-bold capitalize text-primary mb-1">
-          {key}
-        </h3>
-        <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-          {renderValue(value)}
-        </div>
-      </div>
-    ))}
-  </>
-);
-
-const EmptyState = () => (
-  <div className="h-full flex items-center justify-center text-muted-foreground">
-    No document generated yet
-  </div>
-);
-
-const CopyButton = () => (
-  <div className="absolute top-2 right-2">
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8"
-      style={{ color: COLORS.primary }}
-    >
-      <Copy className="h-3 w-3" />
-    </Button>
-  </div>
-);
-
+// ActionButtons component for document actions
 const ActionButtons = ({
-  activeTab,
+  currentTemplate,
   generatedDoc,
   onGenerateDocument,
   onDocumentSave,
   isSaving,
 }: {
-  activeTab: string;
+  currentTemplate: UserTemplate;
   generatedDoc: string;
   onGenerateDocument: () => void;
   onDocumentSave: () => void;
   isSaving: boolean;
 }) => (
-  <div className="flex flex-wrap justify-between gap-3">
+  <div className="flex gap-3 justify-end">
     <Button
+      variant="outline"
       onClick={onGenerateDocument}
-      className="gap-2 hover:opacity-90 bg-black hover:bg-black/90 text-white font-bold"
+      disabled={isSaving}
+      className="gap-2"
     >
       <Sparkles className="h-4 w-4" />
-      Generate {activeTab.toUpperCase()}
+      Generate
     </Button>
     <Button
       onClick={onDocumentSave}
-      className="gap-2 hover:opacity-90 bg-black hover:bg-black/90 text-white font-bold"
+      disabled={!generatedDoc || isSaving}
+      className="gap-2"
     >
+      <Download className="h-4 w-4" />
       {isSaving ? "Saving..." : "Save"}
     </Button>
-    <div className="flex gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-2"
-        disabled={!generatedDoc}
-        style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-      >
-        <Share className="h-4 w-4" />
-        Share
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-2"
-        disabled={!generatedDoc}
-        style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-      >
-        <Download className="h-4 w-4" />
-        Export
-      </Button>
-    </div>
   </div>
 );
 
@@ -351,23 +235,18 @@ export function DocumentationPanel({
   transcription,
 }: DocumentationPanelProps) {
   const searchParams = useSearchParams();
-  const session = searchParams.get("session");
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const [useCustomDocs, setUseCustomDocs] = useState(false);
-  const [documentTypes, setDocumentTypes] = useState(HARDCODED_DOCUMENT_TYPES);
-  const [customDocuments, setCustomDocuments] = useState<CustomDocumentBase[]>(
-    []
-  );
-  const [selectedDocument, setSelectedDocument] = useState("soap");
-  const [activeTab, setActiveTab] = useState("soap");
+  const sessionId = searchParams.get("session");
+  const [templates, setTemplates] = useState<UserTemplate[]>([]);
+  const [currentTemplate, setCurrentTemplate] = useState<
+    UserTemplate | undefined
+  >();
   const [showCaution, setShowCaution] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const errorAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize audio
   useEffect(() => {
     audioRef.current = new Audio("/sounds/success.mp3");
     audioRef.current.volume = 0.3;
@@ -380,175 +259,115 @@ export function DocumentationPanel({
     };
   }, []);
 
-  // Fetch custom documents
+  // Load user templates
   useEffect(() => {
-    const fetchCustomDocuments = async () => {
-      if (session) {
-        const response = await getAllCustomDocumentBySession();
-        if (response?.success && response.customDocument) {
-          setCustomDocuments(
-            Array.isArray(response.customDocument)
-              ? response.customDocument
-              : [response.customDocument]
-          );
+    const fetchTemplates = async () => {
+      if (sessionId) {
+        try {
+          const response = await getAllUserTemplates({ sessionId });
+          setTemplates(response || []);
+        } catch (error) {
+          console.error("Failed to fetch templates:", error);
         }
       }
     };
-    fetchCustomDocuments();
-  }, [session]);
+    fetchTemplates();
+  }, [sessionId]);
 
-  // Update document types based on mode
+  // Fetch session document when template changes
   useEffect(() => {
-    if (useCustomDocs) {
-      setDocumentTypes(
-        customDocuments.map((doc) => ({
-          id: doc.id,
-          label: doc.DocumentName,
-          description: doc.Description,
-          custom: true,
-        }))
-      );
-      if (customDocuments.length > 0) {
-        setActiveTab(customDocuments[0].id);
-        setSelectedDocument(customDocuments[0].id);
-      }
-    } else {
-      setDocumentTypes(HARDCODED_DOCUMENT_TYPES);
-      setActiveTab("soap");
-      setSelectedDocument("soap");
-    }
-  }, [useCustomDocs, customDocuments]);
-
-  // Fetch document when tab changes
-  useEffect(() => {
-    const fetchDocument = async () => {
-      if (useCustomDocs) {
-        const templateId = customDocuments.find(
-          (doc) => doc.id === activeTab
-        )?.id;
-        const doc = await getCustomDocumentByTemplateId({
-          templateId: templateId!,
-        });
-        console.log("Fetched custom document:", doc);
-        setGeneratedDoc(doc ? JSON.parse(doc) : "");
-      }
-      if (!useCustomDocs) {
-        if (session && activeTab) {
-          const doc = await getDocumentBySession({
-            sessionId: session,
-            documentType: activeTab,
+    const fetchSessionDoc = async () => {
+      if (sessionId && currentTemplate) {
+        try {
+          const doc = await getSessionDocumentById({
+            sessionId,
+            sessionDocumentId: currentTemplate.id,
           });
-          setGeneratedDoc(doc ? JSON.parse(doc) : "");
+          setGeneratedDoc(doc?.content || "");
+        } catch (error) {
+          console.error("Failed to fetch session document:", error);
+          setGeneratedDoc("");
         }
       }
     };
-    fetchDocument();
-  }, [session, activeTab, setGeneratedDoc]);
+    fetchSessionDoc();
+  }, [sessionId, currentTemplate, setGeneratedDoc]);
 
-  const currentDocumentType = documentTypes.find((doc) => doc.id === activeTab);
-
-  const renderValue = (value: unknown) => {
-    if (typeof value === "object" && value !== null) {
-      return (
-        <ul className="pl-4 list-disc">
-          {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
-            <li key={k}>
-              <strong>{k}:</strong> {renderValue(v)}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-    return value as React.ReactNode;
-  };
-
-  const onGenerateDocument = () => {
+  const onGenerateDocument = async () => {
+    if (!currentTemplate || !sessionId) return;
     setGenrating(true);
-    if (selectedDocument) {
-      const template = documentTypes.find((doc) => doc.id === selectedDocument);
-      generateDocument({
-        transcript: transcription || "",
-        document_type: template?.label || "",
-        custom: useCustomDocs,
-        template_id: template?.id || "",
-      })
-        .then((response) => {
-          if (response.status === "error") {
-            errorAudioRef.current?.play();
-            setShowCaution(true);
-            setGenrating(false);
-            return;
-          }
-          setGeneratedDoc(response.data.generated_document);
-          setGenrating(false);
-          audioRef.current
-            ?.play()
-            .catch((e) => console.log("Audio play failed:", e));
-        })
-        .catch(console.error);
+
+    try {
+      const response = await generateDocument({
+        transcript: transcription,
+        userTemplateId: currentTemplate.id,
+        sessionId,
+      });
+
+      if (response.status === "error") {
+        errorAudioRef.current?.play();
+        setShowCaution(true);
+        setGenrating(false);
+        return;
+      }
+      setGeneratedDoc(JSON.stringify(response.data.generated_document));
+      audioRef.current?.play().catch(() => {});
+    } catch (error) {
+      console.error("Failed to generate document:", error);
+      errorAudioRef.current?.play();
+      setShowCaution(true);
+    } finally {
+      setGenrating(false);
     }
   };
 
   const onDocumentSave = async () => {
-    if (!session) return;
+    if (!sessionId || !currentTemplate || !generatedDoc) return;
     setIsSaving(true);
-    if (useCustomDocs) {
-      const customDocument = customDocuments.find(
-        (doc) => doc.id === selectedDocument
-      );
-      if (customDocument) {
-        const templateId = customDocument.id;
-        const result = await saveDocument({
-          documentType: activeTab,
-          content: generatedDoc,
-          sessionId: session,
-          templateId: templateId,
-          customTemplate: useCustomDocs,
-        });
-        alert(
-          result ? "Document saved successfully" : "Failed to save document"
-        );
-      }
-    } else {
-      const result = await saveDocument({
-        documentType: activeTab,
-        content: generatedDoc,
-        sessionId: session,
-        templateId: "",
-        customTemplate: useCustomDocs,
-      });
-      alert(result ? "Document saved successfully" : "Failed to save document");
-    }
 
-    setIsSaving(false);
+    try {
+      const result = await saveDocument({
+        sessionId,
+        sessionDocumentId: currentTemplate.id,
+        content: generatedDoc,
+        userTemplateId: currentTemplate.id,
+      });
+
+      alert(result ? "Document saved successfully" : "Failed to save document");
+    } catch (error) {
+      console.error("Failed to save document:", error);
+      alert("Failed to save document");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-[#e2e8f0] backdrop-blur-sm">
-        <DocumentHeader />
-        <TemplateModeToggle
-          useCustomDocs={useCustomDocs}
-          setUseCustomDocs={setUseCustomDocs}
-        />
-        <DocumentTypeSelector
-          documentTypes={documentTypes}
-          currentDocumentType={currentDocumentType}
-          setActiveTab={setActiveTab}
-          setSelectedDocument={setSelectedDocument}
-        />
-        <DocumentDisplay
-          genrating={genrating}
-          generatedDoc={generatedDoc}
-          renderValue={renderValue}
-        />
-        <ActionButtons
-          activeTab={activeTab}
-          generatedDoc={generatedDoc}
-          onGenerateDocument={onGenerateDocument}
-          onDocumentSave={onDocumentSave}
-          isSaving={isSaving}
-        />
+        <DocumentHeader onOpenModal={() => setIsModalOpen(true)} />
+
+        {currentTemplate ? (
+          <>
+            <div className="mb-6 text-sm text-muted-foreground">
+              Using template: <strong>{currentTemplate.template.name}</strong>
+            </div>
+            <DocumentDisplay
+              genrating={genrating}
+              generatedDoc={generatedDoc}
+            />
+            <ActionButtons
+              currentTemplate={currentTemplate}
+              generatedDoc={generatedDoc}
+              onGenerateDocument={onGenerateDocument}
+              onDocumentSave={onDocumentSave}
+              isSaving={isSaving}
+            />
+          </>
+        ) : (
+          <></>
+        )}
+
         {showCaution && (
           <CautionComponent
             onCancel={() => {
@@ -557,6 +376,13 @@ export function DocumentationPanel({
             }}
           />
         )}
+
+        <TemplateModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          templates={templates}
+          setCurrentTemplate={setCurrentTemplate}
+        />
       </div>
     </Suspense>
   );

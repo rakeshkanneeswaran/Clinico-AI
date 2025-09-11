@@ -1,13 +1,13 @@
 model User {
-    id             String           @id @default(cuid())
-    email          String           @unique
-    name           String?
-    password       String?
-    createdAt      DateTime         @default(now())
-    updatedAt      DateTime         @updatedAt
-    userSession    UserSession[]
-    Session        Session[]
-    CustomDocument CustomDocument[]
+    id          String        @id @default(cuid())
+    email       String        @unique
+    name        String?
+    password    String?
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    userSession UserSession[]
+    Session     Session[]
+    UserSession    UserTemplate[]
 }
 
 model UserSession {
@@ -18,3 +18,4 @@ model UserSession {
     expiresAt DateTime
     createdAt DateTime @default(now())
 }
+    

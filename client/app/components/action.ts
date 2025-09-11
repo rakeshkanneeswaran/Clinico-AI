@@ -9,6 +9,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthenticationService } from "@/data-core/services/authentication-service";
 
+
+
 // Helper function for session validation
 async function validateSession() {
     const sessionToken = (await cookies()).get('session_token')?.value;
@@ -45,58 +47,8 @@ export async function generateTranscription(s3FileName: string, sessionId: strin
     return response;
 }
 
-export async function saveDocument(data: { documentType: string; content: string, sessionId: string, templateId: string, customTemplate: boolean }): Promise<boolean> {
-    const user = await validateSession();
-    if (data.customTemplate) {
-        const response = await DocumentService.updateCustomDocument({ templateId: data.templateId, content: data.content });
-        return response.success;
-    }
-
-    else {
-        const document = await DocumentService.createDocument({
-            ...data,
-            userId: user.id // Add the validated user ID
-        });
-        return document.success;
-    }
 
 
-}
-
-export async function generateDocument({ transcript, document_type, custom, template_id }: { transcript: string; document_type: string, custom: boolean, template_id: string }): Promise<{
-    status: string;
-    data: {
-        generated_document: string;
-    };
-}> {
-    await validateSession();
-
-    if (!transcript || !document_type) {
-        throw new Error("Transcription or document type not provided");
-    }
-    const response = await DocumentService.generateDocument({ transcript, document_type, custom, template_id });
-    return response;
-}
-
-export async function getDocumentBySession({ sessionId, documentType }: { sessionId: string; documentType: string }): Promise<string | null> {
-    await validateSession();
-
-    if (!sessionId || !documentType) {
-        throw new Error("Session ID or document type not provided");
-    }
-    const response = await DocumentService.getDocumentBySession({ sessionId, documentType });
-    return response ? response.content : null;
-}
-
-export async function getCustomDocumentByTemplateId({ templateId }: { templateId: string }): Promise<string | null> {
-    await validateSession();
-
-    if (!templateId) {
-        throw new Error("Template ID not provided");
-    }
-    const response = await DocumentService.getSpecificCustomDocument({ templateId });
-    return response ? response.content : null;
-}
 
 export async function getTranscriptBySession({ sessionId }: { sessionId: string }): Promise<string | null> {
     await validateSession();
@@ -185,20 +137,71 @@ export async function generateUploadUrl(fileType: string): Promise<string> {
     return response;
 }
 
-export async function getAllCustomDocumentBySession() {
-    const sessionToken = (await cookies()).get('session_token')?.value;
-    if (!sessionToken) {
-        redirect('/login');
+
+export async function getSessionDocumentById({ sessionId, sessionDocumentId }: {
+    sessionId: string;
+    sessionDocumentId: string;
+}) {
+    await validateSession();
+
+    if (!sessionDocumentId) {
+        throw new Error("Document ID not provided");
     }
-    const user = await AuthenticationService.getUserBySession(sessionToken);
-    if (!user) {
-        redirect('/login');
+    const document = await DocumentService.getSessionDocumentById({ sessionDocumentId, sessionId });
+    if (!document) {
+        throw new Error("Document not found");
     }
+    return document;
+}
 
 
-    if (!sessionToken) {
-        throw new Error("Session ID not provided");
+export async function generateDocument({ transcript, userTemplateId, sessionId }: {
+    transcript: string;
+    userTemplateId: string;
+    sessionId: string;
+}) {
+    if (!transcript) {
+        throw new Error("Transcription or document type not provided");
     }
-    const response = await DocumentService.getCustomDocumentBySession({ sessionId: sessionToken });
-    return response ? response : null;
+    const response = await DocumentService.generateSessionDocument({
+        transcript,
+        userTemplateId,
+        sessionId,
+    });
+    return response;
+}
+
+export async function saveDocument({ sessionId, sessionDocumentId, content, userTemplateId }: {
+    sessionId: string;
+    sessionDocumentId: string;
+    content: string;
+    userTemplateId: string;
+}) {
+    await validateSession();
+
+    if (!sessionId || !sessionDocumentId || !content) {
+        throw new Error("Session ID, Document ID, and content are required");
+    }
+
+    const result = await DocumentService.saveSessionDocument({ sessionId, content, sessionDocumentId, userTemplateId });
+    return result;
+}
+
+export async function getAllUserTemplates({ sessionId }: { sessionId: string; }) {
+
+
+    const response = await DocumentService.getAllUserTemplates({ sessionId });
+    return response;
+}
+
+
+export async function getAllSesssionDocuments({ sessionId }: { sessionId: string; }) {
+    await validateSession();
+
+    if (!sessionId) {
+        throw new Error("Session ID is required");
+    }
+
+    const documents = await DocumentService.getAllSessionDocuments({ sessionId });
+    return documents;
 }
