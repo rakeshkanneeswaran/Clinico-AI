@@ -8,9 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@huggingface/inference':
+        specifier: ^4.8.0
+        version: 4.8.0
       '@langchain/community':
         specifier: ^0.3.50
-        version: 0.3.50(@browserbasehq/sdk@2.6.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.54.2)(deepmerge@4.3.1)(dotenv@17.2.1)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.6.10)(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76)))(@langchain/ollama@0.2.3(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76))))(@supabase/supabase-js@2.54.0)(axios@1.11.0)(ibm-cloud-sdk-core@5.4.2)(jsonwebtoken@9.0.2)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(playwright@1.54.2)(weaviate-client@3.8.0)(ws@8.18.3)
+        version: 0.3.50(@browserbasehq/sdk@2.6.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.54.2)(deepmerge@4.3.1)(dotenv@17.2.1)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(zod@3.25.76))(@huggingface/inference@4.8.0)(@ibm-cloud/watsonx-ai@1.6.10)(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76)))(@langchain/ollama@0.2.3(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76))))(@supabase/supabase-js@2.54.0)(axios@1.11.0)(ibm-cloud-sdk-core@5.4.2)(jsonwebtoken@9.0.2)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(playwright@1.54.2)(weaviate-client@3.8.0)(ws@8.18.3)
       '@langchain/core':
         specifier: ^0.3.68
         version: 0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76))
@@ -101,6 +104,17 @@ packages:
     resolution: {integrity: sha512-tMXdRCfYVixjuFK+Hk0Q1s38gV9zDiDJfWL3h1rv4Qc39oILCu1TRTDt7+fGUI8K4G1Fj125Hx/ru3azECWTyQ==}
     engines: {node: '>=6'}
     hasBin: true
+
+  '@huggingface/inference@4.8.0':
+    resolution: {integrity: sha512-Eq98EAXqYn4rKMfrbEXuhc3IjKfaeIO6eXNOZk9xk6v5akrIWRtd6d1h0fjAWyX4zRbdUpXRh6MvsqXnzGvXCA==}
+    engines: {node: '>=18'}
+
+  '@huggingface/jinja@0.5.1':
+    resolution: {integrity: sha512-yUZLld4lrM9iFxHCwFQ7D1HW2MWMwSbeB7WzWqFYDWK+rEb+WldkLdAJxUPOmgICMHZLzZGVcVjFh3w/YGubng==}
+    engines: {node: '>=18'}
+
+  '@huggingface/tasks@0.19.45':
+    resolution: {integrity: sha512-lM3QOgbfkGZ5gAZOYWOmzMM6BbKcXOIHjgnUAoymTdZEcEcGSr0vy/LWGEiK+vBXC4vU+sCT+WNoA/JZ8TEWdA==}
 
   '@ibm-cloud/watsonx-ai@1.6.10':
     resolution: {integrity: sha512-aZV50/s8VZc7w0t/qcaBw3RLT3WDsAeZUJlP8EbG/csZJF3a8F7alihbGOM4lJFM7R4Z81Lucz3nfHi2KR7J4Q==}
@@ -1648,6 +1662,15 @@ snapshots:
       protobufjs: 7.5.3
       yargs: 17.7.2
 
+  '@huggingface/inference@4.8.0':
+    dependencies:
+      '@huggingface/jinja': 0.5.1
+      '@huggingface/tasks': 0.19.45
+
+  '@huggingface/jinja@0.5.1': {}
+
+  '@huggingface/tasks@0.19.45': {}
+
   '@ibm-cloud/watsonx-ai@1.6.10':
     dependencies:
       '@types/node': 18.19.122
@@ -1671,7 +1694,7 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@langchain/community@0.3.50(@browserbasehq/sdk@2.6.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.54.2)(deepmerge@4.3.1)(dotenv@17.2.1)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(zod@3.25.76))(@ibm-cloud/watsonx-ai@1.6.10)(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76)))(@langchain/ollama@0.2.3(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76))))(@supabase/supabase-js@2.54.0)(axios@1.11.0)(ibm-cloud-sdk-core@5.4.2)(jsonwebtoken@9.0.2)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(playwright@1.54.2)(weaviate-client@3.8.0)(ws@8.18.3)':
+  '@langchain/community@0.3.50(@browserbasehq/sdk@2.6.0)(@browserbasehq/stagehand@1.14.0(@playwright/test@1.54.2)(deepmerge@4.3.1)(dotenv@17.2.1)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(zod@3.25.76))(@huggingface/inference@4.8.0)(@ibm-cloud/watsonx-ai@1.6.10)(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76)))(@langchain/ollama@0.2.3(@langchain/core@0.3.68(openai@5.12.2(ws@8.18.3)(zod@3.25.76))))(@supabase/supabase-js@2.54.0)(axios@1.11.0)(ibm-cloud-sdk-core@5.4.2)(jsonwebtoken@9.0.2)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(playwright@1.54.2)(weaviate-client@3.8.0)(ws@8.18.3)':
     dependencies:
       '@browserbasehq/stagehand': 1.14.0(@playwright/test@1.54.2)(deepmerge@4.3.1)(dotenv@17.2.1)(openai@5.12.2(ws@8.18.3)(zod@3.25.76))(zod@3.25.76)
       '@ibm-cloud/watsonx-ai': 1.6.10
@@ -1690,6 +1713,7 @@ snapshots:
       zod: 3.25.76
     optionalDependencies:
       '@browserbasehq/sdk': 2.6.0
+      '@huggingface/inference': 4.8.0
       '@supabase/supabase-js': 2.54.0
       jsonwebtoken: 9.0.2
       playwright: 1.54.2
