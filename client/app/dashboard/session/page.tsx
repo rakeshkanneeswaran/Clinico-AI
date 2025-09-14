@@ -7,7 +7,6 @@ import { DocumentationPanel } from "@/components/DocumentationPanel";
 import { SessionDocumentsPanel } from "@/components/SessionDocumentsPanel"; // 👈 new import
 import { MedicalHeader } from "@/components/MedicalHeader";
 import { AIChatComponent } from "@/components/ChatComponent";
-import { DeepAnalysisModal } from "@/components/DeepAnalysisModal";
 import { FileText, Mic, FolderOpen } from "lucide-react";
 
 const UnifiedPanel = () => {

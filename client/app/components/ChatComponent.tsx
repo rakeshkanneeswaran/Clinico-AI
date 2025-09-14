@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, SendHorizonal, Sparkles } from "lucide-react";
+import { Loader2, SendHorizonal, Sparkles, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { askQuestion } from "./action";
@@ -20,14 +19,14 @@ export function AIChatComponent() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [lastUserQuery, setLastUserQuery] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session") || "";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,62 +40,90 @@ export function AIChatComponent() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setLastUserQuery(inputValue);
     setInputValue("");
     setIsLoading(true);
 
     try {
       const response = await askQuestion(inputValue, sessionId);
-      const assistantMessage: ChatMessage = {
-        id: Date.now().toString(),
-        content: response.answer,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
+
+      // Keep animation for 3s before showing reply
+      setTimeout(() => {
+        const assistantMessage: ChatMessage = {
           id: Date.now().toString(),
-          content: "Sorry, I encountered an error processing your request.",
+          content: response.answer,
           role: "assistant",
           timestamp: new Date(),
-        },
-      ]);
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+        setIsLoading(false);
+      }, 2000);
+    } catch (error) {
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            content: "Sorry, I encountered an error processing your request.",
+            role: "assistant",
+            timestamp: new Date(),
+          },
+        ]);
+        setIsLoading(false);
+      }, 3000);
       console.error("Error asking question:", error);
-    } finally {
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!lastUserQuery || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const response = await askQuestion(lastUserQuery, sessionId);
+
+      setTimeout(() => {
+        const assistantMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: response.answer,
+          role: "assistant",
+          timestamp: new Date(),
+        };
+
+        // Replace last assistant message with new one
+        setMessages((prev) => {
+          const withoutLastAssistant = [...prev].filter(
+            (msg, idx) => !(msg.role === "assistant" && idx === prev.length - 1)
+          );
+          return [...withoutLastAssistant, assistantMessage];
+        });
+        setIsLoading(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error regenerating:", error);
       setIsLoading(false);
     }
   };
 
   const messageVariants = {
-    hidden: { opacity: 0, scaleY: 0.8, originY: 1 },
-    visible: { opacity: 1, scaleY: 1, originY: 1 },
-    exit: { opacity: 0, scaleY: 0.8, originY: 1 },
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 20 },
   };
 
   return (
-    <div
-      className={`w-full relative ${
-        !isChatOpen ? "border border-[#e2e8f0]" : ""
-      }`}
-    >
+    <div className="w-full relative">
       {!isChatOpen && (
         <Button
-          className="w-full flex items-center gap-2 border-0" // remove default border
-          style={{
-            borderTop: "1px solid red",
-            borderBottom: "1px solid blue",
-            borderLeft: "1px solid black",
-            borderRight: "1px solid black",
-          }}
+          className="w-full flex items-center gap-2 border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition"
           onClick={() => setIsChatOpen(true)}
         >
-          <Sparkles className="h-4 w-4" />
-          <div>Clinico AI</div>
+          <Sparkles className="h-4 w-4 text-indigo-500" />
+          <div className="font-medium">Clinico AI</div>
           <span className="text-sm text-gray-500">Ask Me Anything!</span>
         </Button>
       )}
+
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
@@ -105,14 +132,18 @@ export function AIChatComponent() {
             exit="exit"
             variants={messageVariants}
             transition={{ duration: 0.3 }}
-            className="absolute bottom-full left-0 w-full bg-gradient-card rounded-xl p-4 shadow-lg border border-border/50 backdrop-blur-sm flex flex-col mb-2" // Changed positioning
-            style={{ maxHeight: "70vh" }} // Adjust as needed
+            className="absolute bottom-full left-0 w-full rounded-2xl p-4 shadow-xl border border-gray-200 bg-white flex flex-col mb-2"
+            style={{ maxHeight: "70vh" }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">Ask Clinico AI</h2>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
+              <h2 className="text-base font-medium text-gray-700">
+                Ask Clinico AI
+              </h2>
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
                 onClick={() => setIsChatOpen(false)}
               >
                 ✕
@@ -120,41 +151,57 @@ export function AIChatComponent() {
             </div>
 
             {/* Messages */}
-            <div className="h-64 overflow-y-auto mb-2 rounded-lg bg-background/50 p-3">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`mb-3 flex ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground"
-                    }`}
-                  >
-                    <div className="whitespace-pre-wrap text-sm">
-                      {message.content}
+            <div className="flex-1 overflow-y-auto mb-3 space-y-3 pr-1">
+              {messages.map((message, idx) => {
+                const isLastAssistant =
+                  message.role === "assistant" && idx === messages.length - 1;
+                return (
+                  <div key={message.id} className="flex flex-col items-start">
+                    <div
+                      className={`flex ${
+                        message.role === "user"
+                          ? "justify-end w-full"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
+                          message.role === "user"
+                            ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {message.content}
+                      </div>
                     </div>
-                    <div className="text-xs opacity-70 mt-1 text-right">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
+
+                    {/* Show regenerate under last assistant msg */}
+                    {isLastAssistant && !isLoading && (
+                      <Button
+                        onClick={handleRegenerate}
+                        size="sm"
+                        variant="ghost"
+                        className="mt-1 flex items-center gap-1 text-gray-500 hover:text-indigo-600"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Regenerate Response
+                      </Button>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {isLoading && (
-                <div className="flex justify-start mb-3">
-                  <div className="max-w-[80%] rounded-lg px-4 py-2 bg-secondary text-secondary-foreground">
-                    <div className="flex items-center gap-2">
-                      <div className="dot-flashing"></div>
-                      <span className="text-sm">Clinico AI is thinking...</span>
-                    </div>
+                <div className="flex justify-start">
+                  <div className="px-3 py-2 rounded-2xl">
+                    <video
+                      src="/ai_thinking.mp4"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="h-16 w-auto"
+                    />
                   </div>
                 </div>
               )}
@@ -162,20 +209,22 @@ export function AIChatComponent() {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="relative">
-              <Textarea
-                ref={textareaRef}
+            <form
+              onSubmit={handleSubmit}
+              className="relative flex items-center"
+            >
+              <input
+                type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask Clinico AI..."
-                className="pr-12 resize-none"
-                rows={2}
+                placeholder="Type your question..."
+                className="flex-1 rounded-xl border border-gray-300 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 disabled={isLoading}
               />
               <Button
                 type="submit"
                 size="sm"
-                className="absolute right-2 bottom-2 h-8 w-8"
+                className="absolute right-1.5 h-8 w-8 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white"
                 disabled={!inputValue.trim() || isLoading}
               >
                 {isLoading ? (
@@ -188,46 +237,6 @@ export function AIChatComponent() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Thinking animation style */}
-      <style jsx>{`
-        .dot-flashing {
-          position: relative;
-          width: 10px;
-          height: 10px;
-          border-radius: 5px;
-          background-color: #6366f1;
-          animation: dot-flashing 1s infinite linear alternate;
-        }
-        .dot-flashing::before,
-        .dot-flashing::after {
-          content: "";
-          position: absolute;
-          width: 10px;
-          height: 10px;
-          border-radius: 5px;
-          background-color: #6366f1;
-        }
-        .dot-flashing::before {
-          left: -15px;
-          animation: dot-flashing 1s infinite alternate;
-          animation-delay: 0s;
-        }
-        .dot-flashing::after {
-          left: 15px;
-          animation: dot-flashing 1s infinite alternate;
-          animation-delay: 1s;
-        }
-        @keyframes dot-flashing {
-          0% {
-            background-color: #6366f1;
-          }
-          50%,
-          100% {
-            background-color: rgba(99, 102, 241, 0.2);
-          }
-        }
-      `}</style>
     </div>
   );
 }
