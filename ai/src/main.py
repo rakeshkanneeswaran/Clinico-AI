@@ -2,7 +2,6 @@ import os
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from service.transcription_service import transcribeS3Audio
-from service.document_service import generate_document
 import uvicorn
 from datetime import datetime, timezone
 from core.document_generator.answer_generator import answer_query
@@ -30,6 +29,7 @@ class DocumentData(BaseModel):
     transcript: str
     document_type: str  # e.g., "SOAP", "DAP", "PIE"
     fields: List[DocumentField]
+    doctor_suggestions: str
 
 
 class DocumentDataNonCustom(BaseModel):
@@ -73,31 +73,13 @@ def handle_transcription(user_data: UserData):
     }
 
 
-@app.post("/api/generate-document")
-def handle_document_generation(document_data: DocumentDataNonCustom):
-    print(f"[INFO] 🤖 Generating document for type: {document_data.document_type}")
-    transcript = document_data.transcript
-    document_type = document_data.document_type.lower()
-
-    document = generate_document(transcript, document_type)
-    timestamp = datetime.now(timezone.utc).isoformat()
-    response = {
-        "status": "success",
-        "timestamp": timestamp,
-        "data": {
-            "document_type": document_type.upper(),
-            "generated_document": document,
-        },
-    }
-
-    return response
-
-
 @app.post("/api/generate-custom-document")
 def handle_custom_document_generation(document_data: DocumentData):
     try:
         transcript = document_data.transcript
         document_type = document_data.document_type.lower()
+        doctor_suggestions = document_data.doctor_suggestions
+        print(f"[INFO] Doctor's suggestions: {doctor_suggestions}")
 
         # Create dynamic model based on provided fields
         custom_model = create_dynamic_model(
@@ -105,7 +87,9 @@ def handle_custom_document_generation(document_data: DocumentData):
         )
 
         # Generate the document
-        document = generate_custom_document(transcript, custom_model, document_type)
+        document = generate_custom_document(
+            transcript, custom_model, document_type, doctor_suggestions
+        )
 
         timestamp = datetime.now(timezone.utc).isoformat()
         print(f"[INFO] 🤖 Custom document generated for type: {document_type}")

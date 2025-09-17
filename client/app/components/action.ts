@@ -155,10 +155,11 @@ export async function getSessionDocumentById({ sessionId, sessionDocumentId }: {
 }
 
 
-export async function generateDocument({ transcript, userTemplateId, sessionId }: {
+export async function generateDocument({ transcript, userTemplateId, sessionId, doctor_suggestions }: {
     transcript: string;
     userTemplateId: string;
     sessionId: string;
+    doctor_suggestions: string;
 }) {
     if (!transcript) {
         throw new Error("Transcription or document type not provided");
@@ -167,6 +168,7 @@ export async function generateDocument({ transcript, userTemplateId, sessionId }
         transcript,
         userTemplateId,
         sessionId,
+        doctor_suggestions: doctor_suggestions
     });
     return response;
 }

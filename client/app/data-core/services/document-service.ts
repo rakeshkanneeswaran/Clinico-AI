@@ -180,10 +180,12 @@ export class DocumentService {
         transcript,
         userTemplateId,
         sessionId,
+        doctor_suggestions
     }: {
         transcript: string;
         userTemplateId: string;
         sessionId: string;
+        doctor_suggestions: string;
     }) {
         logger.debug(`Generating session document for session: ${sessionId}, template: ${userTemplateId}`);
 
@@ -214,8 +216,12 @@ export class DocumentService {
                 name: field.name,
                 label: field.name,
                 description: field.description
-            }))
+            })),
+            doctor_suggestions: doctor_suggestions
+
         };
+
+        logger.debug(`Request data prepared for AI: ${JSON.stringify(requestData)}`);
 
         logger.debug(`Sending transcript to AI for document generation using template: ${userTemplate.template.name}`);
 

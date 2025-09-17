@@ -8,7 +8,7 @@ import {
   Dispatch,
   SetStateAction,
 } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileText, Download, Sparkles, Copy, Share, Plus } from "lucide-react";
+import { FileText, Download, Sparkles, Plus } from "lucide-react";
 
 import { CautionComponent } from "./CautionComponent";
 import TemplateForm from "./TemplateForm";
@@ -163,8 +163,8 @@ export function TemplateModal({
   );
 }
 
-// DocumentDisplay component for showing the generated document or a loading indicator
-// Replace your existing DocumentDisplay with this
+// DocumentDisplay component
+// DocumentDisplay component
 const DocumentDisplay = ({
   genrating,
   generatedDoc,
@@ -179,8 +179,20 @@ const DocumentDisplay = ({
     contentToRender = { Document: generatedDoc };
   }
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        JSON.stringify(contentToRender, null, 2) // nicely formatted JSON
+      );
+      alert("Copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      alert("Failed to copy content");
+    }
+  };
+
   return (
-    <div className="mb-6">
+    <div className="mb-6 relative">
       {genrating ? (
         <div className="flex flex-col items-center justify-center py-8">
           <video
@@ -197,12 +209,27 @@ const DocumentDisplay = ({
         </div>
       ) : generatedDoc ? (
         <div
-          className="p-4 leading-relaxed text-gray-800 whitespace-pre-wrap rounded-md border"
+          className="p-4 leading-relaxed text-gray-800 whitespace-pre-wrap rounded-md border relative"
           style={{
             background: `linear-gradient(135deg, ${COLORS.primary}10, ${COLORS.badge}10)`,
             borderColor: `${COLORS.primary}20`,
           }}
         >
+          {/* Copy Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCopy}
+            className="absolute top-2 right-2 text-xs px-2 py-1"
+          >
+            <img
+              width="20"
+              height="20"
+              src="https://img.icons8.com/ios/50/copy--v1.png"
+              alt="copy"
+            />
+          </Button>
+
           {Object.entries(contentToRender).map(([key, value]) => (
             <div key={key} className="mb-4">
               <span className="font-bold text-xl capitalize block mb-1">
@@ -221,9 +248,7 @@ const DocumentDisplay = ({
   );
 };
 
-// ... keep your LoadingIndicator, DocumentContent, CopyButton as-is ...
-
-// ActionButtons component for document actions
+// ActionButtons component
 const ActionButtons = ({
   currentTemplate,
   generatedDoc,
@@ -269,12 +294,12 @@ export function DocumentationPanel({
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
   const [templates, setTemplates] = useState<UserTemplate[]>([]);
-  const [currentTemplate, setCurrentTemplate] = useState<
-    UserTemplate | undefined
-  >();
+  const [currentTemplate, setCurrentTemplate] = useState<UserTemplate>();
   const [showCaution, setShowCaution] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [doctorSuggestions, setDoctorSuggestions] = useState<string>(""); // NEW STATE
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const errorAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -290,6 +315,10 @@ export function DocumentationPanel({
       );
     };
   }, []);
+
+  useEffect(() => {
+    console.log("Doctor's suggestions updated:", doctorSuggestions);
+  }, [doctorSuggestions]);
 
   // Load user templates
   useEffect(() => {
@@ -334,6 +363,7 @@ export function DocumentationPanel({
         transcript: transcription,
         userTemplateId: currentTemplate.id,
         sessionId,
+        doctor_suggestions: doctorSuggestions || "",
       });
 
       if (response.status === "error") {
@@ -384,6 +414,36 @@ export function DocumentationPanel({
             <div className="mb-6 text-sm text-muted-foreground">
               Using template: <strong>{currentTemplate.template.name}</strong>
             </div>
+
+            {/* Doctor Suggestions Input */}
+            <div className="mb-6">
+              <label className="block text-md font-bold mb-2 text-foreground">
+                Provide suggestions to AI ? (optional)
+              </label>
+              <textarea
+                value={doctorSuggestions}
+                onChange={(e) => setDoctorSuggestions(e.target.value)}
+                placeholder="Add any special notes, recommendations, or instructions for the AI..."
+                className="w-full p-3 border rounded-lg text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                maxLength={1200} // hard limit in characters
+              />
+
+              {/* Word Counter */}
+              <div className="text-sm font-semibold text-foreground text-right mt-2 tracking-wide">
+                <div
+                  className={
+                    doctorSuggestions.length >= 1200
+                      ? "text-red-600 text-lg font-bold"
+                      : "text-sm font-semibold"
+                  }
+                >
+                  {doctorSuggestions.length}
+                  <span className="text-gray-500"> / 1200 letters</span>
+                </div>
+              </div>
+            </div>
+
             <DocumentDisplay
               genrating={genrating}
               generatedDoc={generatedDoc}
@@ -396,9 +456,7 @@ export function DocumentationPanel({
               isSaving={isSaving}
             />
           </>
-        ) : (
-          <></>
-        )}
+        ) : null}
 
         {showCaution && (
           <CautionComponent
