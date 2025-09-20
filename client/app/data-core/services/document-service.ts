@@ -60,22 +60,15 @@ export class DocumentService {
         return data;
     }
 
-    static async createTemplate(templateData: { sessionId: string; Template: Template }) {
-        if (!templateData.sessionId || !templateData.Template) {
-            throw new Error("Missing required fields to create custom document");
-        }
+    static async createTemplate(templateData: { userId: string; Template: Template }) {
 
-        const userId = await UserService.getUserIdBySessionId(templateData.sessionId);
-        if (!userId) {
-            throw new Error("User not found for the given session ID");
-        }
 
         const TemplateExisits = await prisma.template.findFirst({
             where: { name: templateData.Template.name },
         });
 
         if (TemplateExisits) {
-            logger.warn(`Template "${templateData.Template.name}" already exists for user: ${userId}`);
+            logger.warn(`Template "${templateData.Template.name}" already exists for user: ${templateData.userId}`);
             return { success: false, message: "Template already exists" };
         }
 
@@ -98,11 +91,11 @@ export class DocumentService {
             });
 
             await tx.userTemplate.create({
-                data: { userId: userId, templateId: createdTemplate.id },
+                data: { userId: templateData.userId, templateId: createdTemplate.id },
             });
         });
 
-        logger.info(`Template "${templateData.Template.name}" successfully created for user: ${userId}`);
+        logger.info(`Template "${templateData.Template.name}" successfully created for user: ${templateData.userId}`);
         return { success: true, message: "Template created successfully" };
     }
 

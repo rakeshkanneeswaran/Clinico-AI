@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createTemplate } from "@/dashboard/template/create/action";
 import { Trash2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { Template, DocumentField } from "@/data-core/services/types";
 
 export default function TemplateForm() {
@@ -16,8 +15,7 @@ export default function TemplateForm() {
     { name: "", label: "", description: "" },
   ]);
   const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
-  const session = searchParams.get("session");
+  const session = localStorage.getItem("session_id");
 
   // Add a new field row
   const handleAddField = () => {

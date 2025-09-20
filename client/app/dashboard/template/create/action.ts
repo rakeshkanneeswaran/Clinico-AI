@@ -70,7 +70,7 @@ export async function createTemplate(templateData: {
     if (!user) {
         redirect('/login');
     }
-    const result = await DocumentService.createTemplate(templateData);
+    const result = await DocumentService.createTemplate({ userId: user.id, Template: templateData.Template });
     return result;
 }
 
