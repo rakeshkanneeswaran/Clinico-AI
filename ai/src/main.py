@@ -6,8 +6,10 @@ import uvicorn
 from datetime import datetime, timezone
 from core.document_generator.answer_generator import answer_query
 from typing import List
-from core.model.llm_schemas import create_dynamic_model
-from core.document_generator.custom_document_generator import generate_custom_document
+from core.document_generator.custom_document_generator import (
+    analyze_patient_needs,
+    translate_document,
+)
 from dotenv import load_dotenv
 from cofig import server_config
 
@@ -27,9 +29,12 @@ class DocumentField(BaseModel):
 
 class DocumentData(BaseModel):
     transcript: str
-    document_type: str  # e.g., "SOAP", "DAP", "PIE"
-    fields: List[DocumentField]
     doctor_suggestions: str
+
+
+class TranslateRequest(BaseModel):
+    json_object: dict
+    target_language: str
 
 
 class DocumentDataNonCustom(BaseModel):
@@ -77,28 +82,26 @@ def handle_transcription(user_data: UserData):
 def handle_custom_document_generation(document_data: DocumentData):
     try:
         transcript = document_data.transcript
-        document_type = document_data.document_type.lower()
-        doctor_suggestions = document_data.doctor_suggestions
-        print(f"[INFO] Doctor's suggestions: {doctor_suggestions}")
+        # document_type = document_data.document_type.lower()
+        # doctor_suggestions = document_data.doctor_suggestions
+        # print(f"[INFO] Doctor's suggestions: {doctor_suggestions}")
 
-        # Create dynamic model based on provided fields
-        custom_model = create_dynamic_model(
-            document_data.fields, f"Dynamic{document_type.capitalize()}Model"
-        )
+        # # Create dynamic model based on provided fields
+        # custom_model = create_dynamic_model(
+        #     document_data.fields, f"Dynamic{document_type.capitalize()}Model"
+        # )
 
         # Generate the document
-        document = generate_custom_document(
-            transcript, custom_model, document_type, doctor_suggestions
-        )
+        document = analyze_patient_needs(transcript)
 
         timestamp = datetime.now(timezone.utc).isoformat()
-        print(f"[INFO] 🤖 Custom document generated for type: {document_type}")
+        # print(f"[INFO] 🤖 Custom document generated for type: {document_type}")
         print(f"[INFO] Document content: {document}")
         return {
             "status": "success",
             "timestamp": timestamp,
             "data": {
-                "document_type": document_type.upper(),
+                "document_type": "",
                 "generated_document": document,
             },
         }
@@ -110,15 +113,35 @@ def handle_custom_document_generation(document_data: DocumentData):
         )
 
 
-class QueryRequest(BaseModel):
-    query: str
-    contexts: List[str]  # Changed from list[str] to List[str]
+@app.post("/api/translate-document")
+def handle_document_translation(request: TranslateRequest):
+    try:
+        json_object = request.json_object
+        target_language = request.target_language
 
+        if not json_object or not target_language:
+            raise HTTPException(
+                status_code=400,
+                detail="Both 'json_object' and 'target_language' are required.",
+            )
 
-@app.post("/api/generate-answer")
-def handle_answer_generation(request: QueryRequest):
-    answer = answer_query(request.query, request.contexts)
-    return {"status": "success", "answer": answer}
+        translated_document = translate_document(json_object, target_language)
+
+        print(f"[INFO] 🤖 Document translated to {target_language}")
+        print(f"[INFO] Translated Document content: {translated_document}")
+
+        return {
+            "status": "success",
+            "data": {
+                "translated_document": translated_document,
+            },
+        }
+
+    except Exception as e:
+        print(f"[ERROR] in document translation: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Failed to translate document: {str(e)}"
+        )
 
 
 if __name__ == "__main__":

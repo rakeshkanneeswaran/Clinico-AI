@@ -24,8 +24,6 @@ export interface Template {
 // 📑 Request payload for document generation
 export interface GenerateDocumentRequest {
     transcript: string;
-    document_type: string;
-    fields: DocumentField[];
     doctor_suggestions?: string; // Optional field for doctor's suggestions
 }
 

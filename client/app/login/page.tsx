@@ -29,7 +29,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white bg-opacity-80 backdrop-blur-lg rounded-xl border border-white border-opacity-20 shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-100 to-purple-100 p-6 text-center border-b border-white border-opacity-30">
-          <h1 className="text-2xl font-bold text-gray-800">MediScribe AI</h1>
+          <h1 className="text-2xl font-bold text-gray-800">AarogyNyaya</h1>
           <p className="text-blue-600 mt-1 text-opacity-80">
             Welcome back, Doctor
           </p>

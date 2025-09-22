@@ -91,7 +91,7 @@ export function ModernSidebar() {
               className="text-xl font-bold"
               style={{ color: colors.activeText }}
             >
-              Clinico AI
+              AarogyNyaya (Health & Justice Together)
             </h1>
           </div>
         </div>

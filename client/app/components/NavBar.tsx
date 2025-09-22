@@ -30,7 +30,10 @@ export default function Navbar() {
       >
         <FaStethoscope className="text-white text-2xl" />
         <span className="text-xl font-semibold text-white tracking-tight">
-          Clinico AI
+          AarogyNyaya{" "}
+          <span className="text-sm font-normal text-gray-300">
+            (Health & Justice Together)
+          </span>
         </span>
       </div>
 

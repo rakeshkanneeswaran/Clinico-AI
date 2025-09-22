@@ -183,40 +183,33 @@ export class DocumentService {
         logger.debug(`Generating session document for session: ${sessionId}, template: ${userTemplateId}`);
 
 
-        const userTemplate = await prisma.userTemplate.findFirst({
-            where: { id: userTemplateId },
-            select: {
-                template: {
-                    select: {
-                        name: true,
-                        id: true,
-                        fields: true
-                    }
-                }
-            }
-        });
+        // const userTemplate = await prisma.userTemplate.findFirst({
+        //     where: { id: userTemplateId },
+        //     select: {
+        //         template: {
+        //             select: {
+        //                 name: true,
+        //                 id: true,
+        //                 fields: true
+        //             }
+        //         }
+        //     }
+        // });
 
-        console.log("Template fetched:", userTemplate);
+        // console.log("Template fetched:", userTemplate);
 
-        if (!userTemplate) {
-            throw new Error("Template not found");
-        }
+        // if (!userTemplate) {
+        //     throw new Error("Template not found");
+        // }
 
         const requestData: GenerateDocumentRequest = {
             transcript,
-            document_type: userTemplate.template.name,
-            fields: userTemplate.template.fields.map(field => ({
-                name: field.name,
-                label: field.name,
-                description: field.description
-            })),
             doctor_suggestions: doctor_suggestions
 
         };
 
         logger.debug(`Request data prepared for AI: ${JSON.stringify(requestData)}`);
 
-        logger.debug(`Sending transcript to AI for document generation using template: ${userTemplate.template.name}`);
 
         const response = await fetch(`${process.env.AI_URL}/api/generate-custom-document`, {
             method: "POST",
@@ -245,12 +238,12 @@ export class DocumentService {
 
         const data = await response.json();
 
-        logger.info(`Custom document generated successfully for session: ${sessionId}, template: ${userTemplate.template.name}`);
+
         return {
             status: "success",
             data: {
                 generated_document: data.data.generated_document,
-                template_used: { id: userTemplate.template.id, name: userTemplate.template.name }
+                template_used: { id: "", name: "" }
             }
         };
     }

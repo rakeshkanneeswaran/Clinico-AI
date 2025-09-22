@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clinico AI",
+  title: "AarogyNyaya (Health & Justice Together)",
   description: "AI-powered medical assistant",
 };
 

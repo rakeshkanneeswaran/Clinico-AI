@@ -6,16 +6,16 @@ import { TranscriptionPanel } from "@/components/TranscriptionPanel";
 import { DocumentationPanel } from "@/components/DocumentationPanel";
 import { SessionDocumentsPanel } from "@/components/SessionDocumentsPanel"; // 👈 new import
 import { MedicalHeader } from "@/components/MedicalHeader";
-import { AIChatComponent } from "@/components/ChatComponent";
+// import { AIChatComponent } from "@/components/ChatComponent";
 import { FileText, Mic, FolderOpen } from "lucide-react";
 
 const UnifiedPanel = () => {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session") ?? "";
 
-  const [activeTab, setActiveTab] = useState<
-    "transcript" | "documentation" | "documents"
-  >("transcript");
+  const [activeTab, setActiveTab] = useState<"transcript" | "HelpPanel">(
+    "transcript"
+  );
 
   const [transcription, setTranscription] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
@@ -38,7 +38,7 @@ const UnifiedPanel = () => {
         />
 
         {/* Tab Navigation */}
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-3  mx-auto">
           <div className="flex border-b border-gray-200 mb-6">
             {/* Transcript Tab */}
             <button
@@ -56,27 +56,14 @@ const UnifiedPanel = () => {
             {/* Documentation Tab */}
             <button
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${
-                activeTab === "documentation"
+                activeTab === "HelpPanel"
                   ? "border-b-2 border-blue-600 text-blue-600 bg-[#f0f4fc]"
                   : "text-gray-600 hover:text-gray-800"
               }`}
-              onClick={() => setActiveTab("documentation")}
+              onClick={() => setActiveTab("HelpPanel")}
             >
               <FileText className="h-4 w-4" />
-              Documentation
-            </button>
-
-            {/* Documents Tab */}
-            <button
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium ${
-                activeTab === "documents"
-                  ? "border-b-2 border-blue-600 text-blue-600 bg-[#f0f4fc]"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => setActiveTab("documents")}
-            >
-              <FolderOpen className="h-4 w-4" />
-              Documents
+              HelpPanel
             </button>
           </div>
 
@@ -91,7 +78,7 @@ const UnifiedPanel = () => {
             />
           )}
 
-          {activeTab === "documentation" && (
+          {activeTab === "HelpPanel" && (
             <DocumentationPanel
               generatedDoc={generatedDoc}
               setGeneratedDoc={setGeneratedDoc}
@@ -101,14 +88,14 @@ const UnifiedPanel = () => {
             />
           )}
 
-          {activeTab === "documents" && (
+          {/* {activeTab === "documents" && (
             <SessionDocumentsPanel sessionId={sessionId} />
-          )}
+          )} */}
 
           {/* Bottom AI Chat */}
-          <div className="mt-8">
+          {/* <div className="mt-8">
             <AIChatComponent />
-          </div>
+          </div> */}
         </div>
       </div>
     </Suspense>

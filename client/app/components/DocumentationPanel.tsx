@@ -11,22 +11,10 @@ import {
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { FileText, Download, Sparkles, Plus } from "lucide-react";
+import { FileText, Download, Sparkles } from "lucide-react";
 
 import { CautionComponent } from "./CautionComponent";
-import TemplateForm from "./TemplateForm";
-import {
-  generateDocument,
-  saveDocument,
-  getSessionDocumentById,
-  getAllUserTemplates,
-} from "./action";
+import { generateDocument, saveDocument, translate_document } from "./action";
 
 // ============ Types ============
 interface DocumentationPanelProps {
@@ -37,23 +25,6 @@ interface DocumentationPanelProps {
   transcription: string;
 }
 
-interface UserTemplate {
-  id: string;
-  template: {
-    id: string;
-    name: string;
-    description: string;
-  };
-}
-
-interface SessionDocument {
-  id: string;
-  content: string;
-  userTemplateId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // ============ Constants ============
 const COLORS = {
   primary: "#3b82f6",
@@ -62,7 +33,7 @@ const COLORS = {
 };
 
 // ============ Helper Components ============
-const DocumentHeader = ({ onOpenModal }: { onOpenModal: () => void }) => (
+const DocumentHeader = () => (
   <div className="flex items-center justify-between mb-6">
     <div className="flex items-center gap-3">
       <div
@@ -73,18 +44,11 @@ const DocumentHeader = ({ onOpenModal }: { onOpenModal: () => void }) => (
       </div>
       <div>
         <h2 className="text-lg font-semibold text-foreground">
-          Generated Documentation
+          Get Help with your problem
         </h2>
-        <p className="text-xs text-muted-foreground">
-          AI-powered medical documentation
-        </p>
       </div>
     </div>
     <div className="flex gap-2">
-      <Button variant="outline" className="gap-2" onClick={onOpenModal}>
-        <Plus className="h-4 w-4" />
-        Create / Select Template
-      </Button>
       <Badge
         variant="outline"
         className="gap-1.5"
@@ -97,74 +61,6 @@ const DocumentHeader = ({ onOpenModal }: { onOpenModal: () => void }) => (
   </div>
 );
 
-export function TemplateModal({
-  isOpen,
-  onClose,
-  templates,
-  setCurrentTemplate,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  templates: UserTemplate[];
-  setCurrentTemplate: (tpl: UserTemplate) => void;
-}) {
-  const [showForm, setShowForm] = useState(false);
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl min-h-[80vh] backdrop-blur-md">
-        {!showForm ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Select or Create Template</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {templates.length > 0 ? (
-                templates.map((tpl) => (
-                  <div
-                    key={tpl.id}
-                    onClick={() => {
-                      setCurrentTemplate(tpl);
-                      onClose();
-                    }}
-                    className="p-3 border rounded-lg cursor-pointer hover:bg-[#ecf5fa]"
-                  >
-                    <div className="font-medium">{tpl.template.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {tpl.template.description}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground">No templates available.</p>
-              )}
-            </div>
-            <div className="pt-4 flex justify-end">
-              <Button onClick={() => setShowForm(true)}>
-                Create New Template
-              </Button>
-            </div>
-          </>
-        ) : (
-          <div className="w-full max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Template</DialogTitle>
-            </DialogHeader>
-            <TemplateForm />
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={() => setShowForm(false)}>
-                Back to Templates
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// DocumentDisplay component
-// DocumentDisplay component
 const DocumentDisplay = ({
   genrating,
   generatedDoc,
@@ -172,7 +68,7 @@ const DocumentDisplay = ({
   genrating: boolean;
   generatedDoc: string;
 }) => {
-  let contentToRender: Record<string, string> = {};
+  let contentToRender: Record<string, any> = {};
   try {
     contentToRender = generatedDoc ? JSON.parse(generatedDoc) : {};
   } catch {
@@ -182,7 +78,7 @@ const DocumentDisplay = ({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(
-        JSON.stringify(contentToRender, null, 2) // nicely formatted JSON
+        JSON.stringify(contentToRender, null, 2)
       );
       alert("Copied to clipboard!");
     } catch (err) {
@@ -215,7 +111,6 @@ const DocumentDisplay = ({
             borderColor: `${COLORS.primary}20`,
           }}
         >
-          {/* Copy Button */}
           <Button
             size="sm"
             variant="outline"
@@ -235,7 +130,11 @@ const DocumentDisplay = ({
               <span className="font-bold text-xl capitalize block mb-1">
                 {key.replace(/([A-Z])/g, " $1").trim()}
               </span>
-              <span className="text-gray-700">{value as string}</span>
+              <span className="text-gray-700">
+                {typeof value === "string"
+                  ? value
+                  : JSON.stringify(value, null, 2)}
+              </span>
             </div>
           ))}
         </div>
@@ -248,15 +147,12 @@ const DocumentDisplay = ({
   );
 };
 
-// ActionButtons component
 const ActionButtons = ({
-  currentTemplate,
   generatedDoc,
   onGenerateDocument,
   onDocumentSave,
   isSaving,
 }: {
-  currentTemplate: UserTemplate;
   generatedDoc: string;
   onGenerateDocument: () => void;
   onDocumentSave: () => void;
@@ -270,15 +166,7 @@ const ActionButtons = ({
       className="gap-2"
     >
       <Sparkles className="h-4 w-4" />
-      Generate
-    </Button>
-    <Button
-      onClick={onDocumentSave}
-      disabled={!generatedDoc || isSaving}
-      className="gap-2"
-    >
-      <Download className="h-4 w-4" />
-      {isSaving ? "Saving..." : "Save"}
+      Get Help
     </Button>
   </div>
 );
@@ -293,13 +181,12 @@ export function DocumentationPanel({
 }: DocumentationPanelProps) {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
-  const [templates, setTemplates] = useState<UserTemplate[]>([]);
-  const [currentTemplate, setCurrentTemplate] = useState<UserTemplate>();
   const [showCaution, setShowCaution] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [doctorSuggestions, setDoctorSuggestions] = useState<string>(""); // NEW STATE
+  // New states for translation
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("Hindi");
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const errorAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -316,54 +203,16 @@ export function DocumentationPanel({
     };
   }, []);
 
-  useEffect(() => {
-    console.log("Doctor's suggestions updated:", doctorSuggestions);
-  }, [doctorSuggestions]);
-
-  // Load user templates
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      if (sessionId) {
-        try {
-          const response = await getAllUserTemplates({ sessionId });
-          setTemplates(response || []);
-        } catch (error) {
-          console.error("Failed to fetch templates:", error);
-        }
-      }
-    };
-    fetchTemplates();
-  }, [sessionId]);
-
-  // Fetch session document when template changes
-  useEffect(() => {
-    const fetchSessionDoc = async () => {
-      if (sessionId && currentTemplate) {
-        try {
-          const doc = await getSessionDocumentById({
-            sessionId,
-            sessionDocumentId: currentTemplate.id,
-          });
-          setGeneratedDoc(doc?.content || "");
-        } catch (error) {
-          console.error("Failed to fetch session document:", error);
-          setGeneratedDoc("");
-        }
-      }
-    };
-    fetchSessionDoc();
-  }, [sessionId, currentTemplate, setGeneratedDoc]);
-
   const onGenerateDocument = async () => {
-    if (!currentTemplate || !sessionId) return;
+    if (!sessionId) return;
     setGenrating(true);
 
     try {
       const response = await generateDocument({
         transcript: transcription,
-        userTemplateId: currentTemplate.id,
+        userTemplateId: "soap-note-default", // hardcoded template ID
         sessionId,
-        doctor_suggestions: doctorSuggestions || "",
+        doctor_suggestions: "",
       });
 
       if (response.status === "error") {
@@ -372,6 +221,7 @@ export function DocumentationPanel({
         setGenrating(false);
         return;
       }
+      console.log("Generated Document:", response.data.generated_document);
       setGeneratedDoc(JSON.stringify(response.data.generated_document));
       audioRef.current?.play().catch(() => {});
     } catch (error) {
@@ -384,15 +234,15 @@ export function DocumentationPanel({
   };
 
   const onDocumentSave = async () => {
-    if (!sessionId || !currentTemplate || !generatedDoc) return;
+    if (!sessionId || !generatedDoc) return;
     setIsSaving(true);
 
     try {
       const result = await saveDocument({
         sessionId,
-        sessionDocumentId: currentTemplate.id,
+        sessionDocumentId: "soap-note-default",
         content: generatedDoc,
-        userTemplateId: currentTemplate.id,
+        userTemplateId: "soap-note-default",
       });
 
       alert(result ? "Document saved successfully" : "Failed to save document");
@@ -404,59 +254,87 @@ export function DocumentationPanel({
     }
   };
 
+  // ===== Translation handler =====
+  const handleTranslate = async () => {
+    if (!generatedDoc) {
+      alert("Generate a document first before translating.");
+      return;
+    }
+
+    let jsonObject: any;
+    try {
+      jsonObject = JSON.parse(generatedDoc);
+    } catch {
+      // If generatedDoc isn't JSON, send as string under a single field
+      jsonObject = { Document: generatedDoc };
+    }
+
+    setIsTranslating(true);
+    try {
+      const response = await translate_document({
+        json_object: jsonObject,
+        target_language: selectedLanguage,
+      });
+
+      const translated = response.generated_document;
+      // Ensure we store stringified JSON for UI
+      const translatedString =
+        typeof translated === "string"
+          ? translated
+          : JSON.stringify(translated);
+
+      console.log("Translated Document:", translatedString);
+
+      setGeneratedDoc(translatedString);
+    } catch (err: any) {
+      console.error("Translation error:", err);
+      alert("Failed to translate document: " + (err?.message || err));
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className="bg-gradient-card rounded-xl p-6 shadow-lg border border-[#e2e8f0] backdrop-blur-sm">
-        <DocumentHeader onOpenModal={() => setIsModalOpen(true)} />
+      <div className="relative bg-gradient-card rounded-xl p-6 shadow-lg border border-[#e2e8f0] backdrop-blur-sm">
+        {/* Upper-right translation controls (absolute so it sits top-right) */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+          <select
+            value={selectedLanguage}
+            onChange={(e) => setSelectedLanguage(e.target.value)}
+            className="text-sm p-2 border rounded-md bg-white"
+            aria-label="Select language"
+            disabled={!generatedDoc || isTranslating}
+          >
+            <option>Hindi</option>
+            <option>Tamil</option>
+            <option>Kannada</option>
+            <option>Telugu</option>
+            <option>Malayalam</option>
+            <option>English</option>
+            <option>Spanish</option>
+            <option>French</option>
+          </select>
 
-        {currentTemplate ? (
-          <>
-            <div className="mb-6 text-sm text-muted-foreground">
-              Using template: <strong>{currentTemplate.template.name}</strong>
-            </div>
+          <Button
+            onClick={handleTranslate}
+            disabled={!generatedDoc || isTranslating}
+            className="gap-2"
+            variant="outline"
+          >
+            {isTranslating ? "Translating..." : "Translate"}
+          </Button>
+        </div>
 
-            {/* Doctor Suggestions Input */}
-            <div className="mb-6">
-              <label className="block text-md font-bold mb-2 text-foreground">
-                Provide suggestions to AI ? (optional)
-              </label>
-              <textarea
-                value={doctorSuggestions}
-                onChange={(e) => setDoctorSuggestions(e.target.value)}
-                placeholder="Add any special notes, recommendations, or instructions for the AI..."
-                className="w-full p-3 border rounded-lg text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                maxLength={1200} // hard limit in characters
-              />
+        <DocumentHeader />
 
-              {/* Word Counter */}
-              <div className="text-sm font-semibold text-foreground text-right mt-2 tracking-wide">
-                <div
-                  className={
-                    doctorSuggestions.length >= 1200
-                      ? "text-red-600 text-lg font-bold"
-                      : "text-sm font-semibold"
-                  }
-                >
-                  {doctorSuggestions.length}
-                  <span className="text-gray-500"> / 1200 letters</span>
-                </div>
-              </div>
-            </div>
-
-            <DocumentDisplay
-              genrating={genrating}
-              generatedDoc={generatedDoc}
-            />
-            <ActionButtons
-              currentTemplate={currentTemplate}
-              generatedDoc={generatedDoc}
-              onGenerateDocument={onGenerateDocument}
-              onDocumentSave={onDocumentSave}
-              isSaving={isSaving}
-            />
-          </>
-        ) : null}
+        <DocumentDisplay genrating={genrating} generatedDoc={generatedDoc} />
+        <ActionButtons
+          generatedDoc={generatedDoc}
+          onGenerateDocument={onGenerateDocument}
+          onDocumentSave={onDocumentSave}
+          isSaving={isSaving}
+        />
 
         {showCaution && (
           <CautionComponent
@@ -466,13 +344,6 @@ export function DocumentationPanel({
             }}
           />
         )}
-
-        <TemplateModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          templates={templates}
-          setCurrentTemplate={setCurrentTemplate}
-        />
       </div>
     </Suspense>
   );

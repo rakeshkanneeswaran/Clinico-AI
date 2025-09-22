@@ -1,66 +1,136 @@
 from core.model.model import generate_llm
-from pydantic import BaseModel
-from typing import Type
+from pydantic import BaseModel, Field
+from typing import Dict, Any
 
 
-def generate_custom_document(
-    transcript: str,
-    custom_model: Type[BaseModel],
-    document_type: str,
-    doctor_suggestions: str = None,
-):
-    """
-    Generate a medical note based on custom model fields, document type,
-    and doctor suggestions (compulsory if provided).
-    """
-    # Get field information from the model class
-    fields_info = [
-        {"label": name, "description": field.description}
-        for name, field in custom_model.__fields__.items()
-    ]
-
-    # Build the note sections
-    prompt_sections = [
-        f"{field['label'].upper()}: {field['description']}" for field in fields_info
-    ]
-
-    # Start prompt with doctor's suggestions (highest priority)
-    prompt_template = ""
-
-    if doctor_suggestions and doctor_suggestions.strip():
-        prompt_template += (
-            f"DOCTOR'S SUGGESTIONS (MANDATORY):\n{doctor_suggestions}\n\n"
-            f"⚠️ RULE: You MUST strictly follow and apply these suggestions. "
-            f"They override any conflicting information in the transcript. "
-            f"Do not ignore, alter, or omit them. "
-            f"If something in the transcript contradicts the suggestions, IGNORE it.\n\n"
-        )
-    else:
-        prompt_template += (
-            f"⚠️ RULE: No doctor suggestions provided. Only rely on the transcript "
-            f"and required sections. Do not add or invent information.\n\n"
-        )
-
-    # Continue with the actual task
-    prompt_template += (
-        f"You are a professional medical scribe. Convert the following "
-        f"doctor-patient conversation into a {document_type} note with EXACTLY "
-        f"these {len(fields_info)} sections:\n\n"
-        + "\n".join(prompt_sections)
-        + f"\n\nCONVERSATION:\n{transcript}\n\n"
-        f"✅ Before finalizing, double-check that the note follows ALL rules "
-        f"and especially the doctor's suggestions above."
+class PatientSupportAnalysis(BaseModel):
+    need_mental_health: str = Field(
+        ...,
+        description=(
+            "Clearly state 'Yes, mental health support is required because…' "
+            "or 'No, mental health support is not required because…'. "
+            "Provide reasoning in 2–4 sentences with empathetic explanation."
+        ),
+    )
+    mental_health_reason: str = Field(
+        ...,
+        description=(
+            "Explain in detail (4–6 sentences) why mental health support is or is not needed. "
+            "Use simple, compassionate language, focusing on the patient’s emotional state, "
+            "symptoms, and potential benefits of counseling or therapy. "
+            "If not required, clearly write 'Not required in this case' with explanation."
+        ),
+    )
+    need_legal_help: str = Field(
+        ...,
+        description=(
+            "Clearly state 'Yes, legal help is required under Indian law because…' "
+            "or 'No, legal help is not required because…'. "
+            "Provide reasoning in 2–4 sentences."
+        ),
+    )
+    legal_reason: str = Field(
+        ...,
+        description=(
+            "Explain in detail (4–6 sentences) why legal help is or is not needed. "
+            "If required, mention relevant Indian laws (e.g., Domestic Violence Act, IPC sections) "
+            "in simple, supportive terms. "
+            "If not required, clearly write 'Not required in this case' with explanation."
+        ),
+    )
+    urgency_level: str = Field(
+        ...,
+        description=(
+            "Categorize urgency as 'low', 'moderate', or 'high'. "
+            "Then provide a short justification (2–3 sentences) "
+            "explaining why this urgency level was chosen."
+        ),
     )
 
+
+def analyze_patient_needs(transcript: str):
+    """
+    Analyze the transcript and identify whether the patient requires
+    mental health support, legal advice (under Indian law), or both.
+    Always fill every field. If something is not required, explicitly say
+    'Not required in this case' with explanation.
+    """
+    analysis_prompt = f"""
+    We are here to support you. We will carefully read what you have shared below
+    and then explain what kind of help you may need. We will always give clear answers
+    for every section, even if something is not needed.
+
+    Transcript (your words):
+    {transcript}
+
+    Instructions for response:
+    - Always fill every field of the structured output.
+    - Do NOT leave any field blank or empty.
+    - If something is not needed, explicitly write "Not required in this case"
+      and explain briefly why.
+    - Speak directly to the patient in first person plural ("we believe", "we suggest", "we feel").
+    - For mental health fields, give compassionate reasoning in simple language.
+    - For legal fields, explain gently and mention relevant Indian laws if applicable.
+    - For urgency, always provide both a category and justification.
+    - Expand responses with empathetic detail (not just one sentence).
+    """
+
     try:
-        print("Generated Prompt:", prompt_template)
-        response = generate_llm(custom_model).invoke(prompt_template)
-        return response
+        model = generate_llm(PatientSupportAnalysis)
+        response = model.invoke(analysis_prompt)
+        return response.dict()
 
     except Exception as e:
-        print(f"[ERROR] Failed to generate {document_type} note: {str(e)}")
-        return {
-            "error": f"Failed to generate {document_type} note",
-            "exception": str(e),
-            "raw_response": str(response) if "response" in locals() else None,
-        }
+        print(f"[ERROR] Analysis failed: {str(e)}")
+        return {"error": "Analysis failed", "exception": str(e)}
+
+
+def translate_document(
+    json_object: Dict[str, Any], target_language: str
+) -> Dict[str, Any]:
+    """
+    Translate the entire JSON document content to the target language while preserving the structure.
+
+    Args:
+        json_object: The JSON object containing the analysis results in English
+        target_language: The language to translate to (e.g., 'Hindi', 'Spanish', 'French')
+
+    Returns:
+        Dict[str, Any]: Translated JSON object with same structure but content in target language
+    """
+    translation_prompt = f"""
+    Translate the following JSON document content to {target_language}. 
+    Preserve the exact JSON structure and field names. Only translate the string values.
+    Maintain the same tone, empathy, and professional style in the translation.
+    Keep legal terms and act names accurate but translated appropriately.
+    
+    Original JSON:
+    {json_object}
+    
+    Instructions:
+    - Translate all text content to {target_language}
+    - Keep the JSON structure identical
+    - Maintain the original meaning and tone
+    - Ensure legal terminology is accurately translated
+    - Preserve the empathetic and supportive language
+    - Return only the translated JSON object
+    """
+
+    try:
+        # Create a simple Pydantic model for translation
+        class TranslatedDocument(BaseModel):
+            need_mental_health: str
+            mental_health_reason: str
+            need_legal_help: str
+            legal_reason: str
+            urgency_level: str
+
+        translation_model = generate_llm(TranslatedDocument)
+        translated_response = translation_model.invoke(translation_prompt)
+
+        return translated_response.dict()
+
+    except Exception as e:
+        print(f"[ERROR] Translation failed: {str(e)}")
+        # Return original object if translation fails
+        return {**json_object, "translation_error": str(e)}

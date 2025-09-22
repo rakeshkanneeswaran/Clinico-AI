@@ -146,24 +146,6 @@ Patient: Yes, black stools and dizziness.`;
               </>
             )}
           </Button>
-          <Button
-            onClick={onDeepAnalysis}
-            variant="outline"
-            className="gap-2 border-primary text-primary hover:bg-primary/10"
-            disabled={!transcription || isAnalyzing}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Deep Analysis
-              </>
-            )}
-          </Button>
         </div>
       </div>
     </Suspense>

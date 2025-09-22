@@ -11,6 +11,30 @@ import { AuthenticationService } from "@/data-core/services/authentication-servi
 
 
 
+export async function translate_document(request: { json_object: string; target_language: string }) {
+    const requestData = {
+        json_object: request.json_object,
+        target_language: request.target_language
+
+    };
+
+    const response = await fetch(`${process.env.AI_URL}/api/translate-document`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "CLINICO_AI_API_KEY": process.env.CLINICO_AI_API_KEY!,
+        },
+        body: JSON.stringify(requestData),
+    });
+
+    const data = await response.json();
+    console.log("Translation Response:", data);
+    const generated_document = data.data.translated_document as string
+    return { status: data.status as string, generated_document };
+
+
+}
+
 // Helper function for session validation
 async function validateSession() {
     const sessionToken = (await cookies()).get('session_token')?.value;
@@ -168,7 +192,7 @@ export async function generateDocument({ transcript, userTemplateId, sessionId, 
         transcript,
         userTemplateId,
         sessionId,
-        doctor_suggestions: doctor_suggestions
+        doctor_suggestions: ""
     });
     return response;
 }

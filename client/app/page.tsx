@@ -7,8 +7,8 @@ import Navbar from "./components/NavBar";
 
 export default function Home() {
   const colors = {
-    primary: "#2563eb", // Deeper blue (Clinico AI's brand)
-    accent: "#10b981", // Emerald-500 (kept for CTAs)
+    primary: "#2563eb", // Deep Blue for trust
+    accent: "#10b981", // Emerald for growth & wellness
   };
 
   const [scrollY, setScrollY] = useState(0);
@@ -29,7 +29,7 @@ export default function Home() {
         <Navbar />
       </div>
       <div className="min-h-screen w-full bg-white relative">
-        {/* Subtle grid background with softer gradients */}
+        {/* Subtle background */}
         <div
           className="absolute inset-0 z-0"
           style={{
@@ -49,15 +49,15 @@ export default function Home() {
             <div className="max-w-6xl mx-auto flex flex-col items-center">
               <div className="w-full max-w-2xl text-center mb-16 space-y-6">
                 <h1 className="text-4xl md:text-5xl font-bold">
-                  The AI Clinical Assistant
-                  <span className="block mt-2 text-blue-600">
-                    Doctors Actually Love
+                  AarogyNyaya{" "}
+                  <span className="block mt-2 text-blue-600 text-lg font-medium">
+                    (Health & Justice Together)
                   </span>
                 </h1>
                 <p className="text-lg text-gray-600">
-                  Clinico AI automates documentation, provides decision support,
-                  and manages patient relationships—so you can focus on care,
-                  not paperwork.
+                  AarogyNyaya empowers people by combining healthcare support
+                  with access to justice—offering medical documentation,
+                  well-being guidance, and legal assistance where needed.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
@@ -65,7 +65,7 @@ export default function Home() {
                     className="px-6 py-3 rounded-lg font-medium text-white shadow-md hover:opacity-90 transition-all"
                     style={{ backgroundColor: colors.primary }}
                   >
-                    See Clinico AI in Action
+                    Explore AarogyNyaya
                   </Link>
                 </div>
               </div>
@@ -77,15 +77,15 @@ export default function Home() {
                   style={{ transform: `scale(${scale})` }}
                 >
                   <Image
-                    src="/dashboard.png" // Replace with Clinico AI's actual dashboard
-                    alt="Clinico AI assistant showing real-time documentation and insights"
+                    src="/dashboard.png"
+                    alt="AarogyNyaya assistant showing integrated medical and legal support"
                     className="rounded-lg w-full h-auto"
                     width={1000}
                     height={600}
                     priority
                   />
                   <div className="absolute -bottom-6 left-0 right-0 text-center text-gray-500 text-sm">
-                    AI-generated notes with clinical decision support
+                    AI-generated insights with medical + legal triage support
                   </div>
                 </div>
               </div>
@@ -96,11 +96,11 @@ export default function Home() {
           <section id="features" className="py-32 px-6">
             <div className="max-w-4xl mx-auto text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">
-                More Than Just a Medical Scribe
+                More Than Just a Health Assistant
               </h2>
               <p className="text-lg text-gray-600">
-                Clinico AI combines documentation automation with longitudinal
-                care support.
+                AarogyNyaya bridges healthcare and justice to ensure holistic
+                well-being.
               </p>
             </div>
 
@@ -108,23 +108,23 @@ export default function Home() {
               {[
                 {
                   icon: <FaRobot className="text-blue-500 text-3xl" />,
-                  title: "AI Medical Scribe",
-                  desc: "Accurate, real-time documentation during consultations",
+                  title: "AI Health Scribe",
+                  desc: "Accurate, real-time medical documentation",
                 },
                 {
                   icon: <FaUserMd className="text-blue-500 text-3xl" />,
-                  title: "Clinical Decision Support",
-                  desc: "Evidence-based recommendations at point of care",
+                  title: "Decision Support",
+                  desc: "Evidence-based clinical recommendations",
                 },
                 {
                   icon: <FaRegClock className="text-blue-500 text-3xl" />,
-                  title: "Longitudinal Care",
-                  desc: "Tracks patient history and outcomes over time",
+                  title: "Legal Aid Insights",
+                  desc: "Detects when legal help under Indian law may be needed",
                 },
                 {
                   icon: <FaChartLine className="text-blue-500 text-3xl" />,
-                  title: "Workflow Automation",
-                  desc: "Handles referrals, billing, and follow-ups automatically",
+                  title: "Holistic Care Tracking",
+                  desc: "Monitors patient history, stress levels, and legal risks",
                 },
               ].map((feature, index) => (
                 <div
@@ -145,24 +145,24 @@ export default function Home() {
           <section id="how-it-works" className="py-32 px-6 bg-gray-50/50">
             <div className="max-w-6xl mx-auto">
               <h2 className="text-3xl font-bold text-center mb-16">
-                Designed for Real Clinical Workflows
+                Health and Justice, Step by Step
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
                   {
                     step: "1",
-                    title: "Start Consultation",
-                    desc: "Clinico AI listens passively (in-person or virtual) without disrupting flow",
+                    title: "Share Your Story",
+                    desc: "AarogyNyaya listens carefully to your health and life concerns",
                   },
                   {
                     step: "2",
-                    title: "AI Documents & Analyzes",
-                    desc: "Generates structured notes while surfacing relevant clinical insights",
+                    title: "AI Analyzes",
+                    desc: "Generates structured notes, identifying medical + legal needs",
                   },
                   {
                     step: "3",
-                    title: "Enhance Patient Care",
-                    desc: "Focus on the patient while Clinico AI handles documentation and admin",
+                    title: "Get Right Support",
+                    desc: "We connect you to care and justice pathways",
                   },
                 ].map((item, index) => (
                   <div
@@ -186,7 +186,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Testimonial/Stats Section */}
+          {/* Stats Section */}
           <section className="py-32 px-6 bg-white">
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -197,7 +197,7 @@ export default function Home() {
                   >
                     10+
                   </div>
-                  <p className="text-gray-600">Hours saved per week</p>
+                  <p className="text-gray-600">Languages supported</p>
                 </div>
                 <div className="text-center p-8">
                   <div
@@ -207,7 +207,7 @@ export default function Home() {
                     80%
                   </div>
                   <p className="text-gray-600">
-                    Reduction in documentation time
+                    Faster access to health & legal support
                   </p>
                 </div>
                 <div className="text-center p-8">
@@ -217,7 +217,7 @@ export default function Home() {
                   >
                     100%
                   </div>
-                  <p className="text-gray-600">HIPAA compliant</p>
+                  <p className="text-gray-600">Confidential & Secure</p>
                 </div>
               </div>
             </div>
@@ -230,24 +230,23 @@ export default function Home() {
           >
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-6">
-                Reduce Burnout, Improve Care
+                Together for Health & Justice
               </h2>
               <p className="text-lg mb-8 opacity-90">
-                Join the movement to put clinicians back at the center of
-                healthcare.
+                Join AarogyNyaya to ensure every voice finds care and fairness.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/demo"
                   className="px-8 py-3 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100 transition-colors shadow-lg"
                 >
-                  Request Demo
+                  Try AarogyNyaya
                 </Link>
                 <Link
                   href="/contact"
                   className="px-8 py-3 border border-white text-white rounded-lg font-medium hover:bg-white/10 transition-colors"
                 >
-                  Talk to Sales
+                  Connect With Us
                 </Link>
               </div>
             </div>
@@ -262,22 +261,29 @@ export default function Home() {
                     className="text-xl font-bold"
                     style={{ color: colors.primary }}
                   >
-                    Clinico AI
+                    AarogyNyaya
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    (Health & Justice Together)
                   </span>
                 </div>
                 <p className="text-gray-600">
-                  The AI clinical assistant transforming healthcare
-                  documentation.
+                  The AI assistant uniting healthcare and justice for holistic
+                  support.
                 </p>
               </div>
               {[
                 {
                   title: "Product",
-                  links: ["Medical Scribe", "Decision Support", "Integrations"],
+                  links: [
+                    "Health Scribe",
+                    "Decision Support",
+                    "Legal Insights",
+                  ],
                 },
                 {
                   title: "Resources",
-                  links: ["Case Studies", "Blog", "Clinical Research"],
+                  links: ["Case Studies", "Blog", "Research"],
                 },
                 {
                   title: "Company",
@@ -303,7 +309,7 @@ export default function Home() {
             </div>
             <div className="max-w-6xl mx-auto mt-12 pt-8 border-t border-gray-200 text-center text-gray-600">
               <p>
-                © {new Date().getFullYear()} Clinico AI . All rights reserved.
+                © {new Date().getFullYear()} AarogyNyaya. All rights reserved.
               </p>
             </div>
           </footer>

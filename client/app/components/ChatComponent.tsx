@@ -21,12 +21,35 @@ export function AIChatComponent() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [lastUserQuery, setLastUserQuery] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null); // Ref for the chat container
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session") || "";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Add effect to handle outside clicks
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // If chat is open and click is outside of chat container, close the chat
+      if (
+        isChatOpen &&
+        chatContainerRef.current &&
+        !chatContainerRef.current.contains(event.target as Node)
+      ) {
+        setIsChatOpen(false);
+      }
+    }
+
+    // Add event listener when component mounts
+    document.addEventListener("mousedown", handleClickOutside);
+
+    // Clean up event listener when component unmounts
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isChatOpen]); // Only re-run if isChatOpen changes
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +135,7 @@ export function AIChatComponent() {
   };
 
   return (
-    <div className="w-full relative">
+    <div className="w-full relative" ref={chatContainerRef}>
       {!isChatOpen && (
         <Button
           className="w-full flex items-center gap-2 border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition"
