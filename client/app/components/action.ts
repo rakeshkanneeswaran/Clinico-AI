@@ -125,10 +125,10 @@ export async function saveTranscript(sessionId: string, content: string) {
 
     try {
         const result = await TranscriptService.updateTranscript({ sessionId, content });
-        const response = await RAGService.storeConversation(content, sessionId);
-        if (response.status !== 'success') {
-            throw new Error(response.message || "Failed to save transcript");
-        }
+        // const response = await RAGService.storeConversation(content, sessionId);
+        // if (response.status !== 'success') {
+        //     throw new Error(response.message || "Failed to save transcript");
+        // }
         return result.success;
     } catch (error) {
         console.error("Error saving transcript:", error);

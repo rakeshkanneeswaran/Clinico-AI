@@ -46,6 +46,57 @@ class PatientSupportAnalysis(BaseModel):
             "explaining why this urgency level was chosen."
         ),
     )
+    treatment_plan: str = Field(
+        ...,
+        description=(
+            "Provide a clear, supportive next-step plan for the patient in 4–6 sentences. "
+            "If mental health support is needed, suggest therapy, counseling, or helplines. "
+            "If legal help is needed, suggest approaching protection officers, NGOs, or legal aid services. "
+            "If neither is required, provide supportive reassurance and healthy coping suggestions."
+        ),
+    )
+    need_mental_health: str = Field(
+        ...,
+        description=(
+            "Clearly state 'Yes, mental health support is required because…' "
+            "or 'No, mental health support is not required because…'. "
+            "Provide reasoning in 2–4 sentences with empathetic explanation."
+        ),
+    )
+    mental_health_reason: str = Field(
+        ...,
+        description=(
+            "Explain in detail (4–6 sentences) why mental health support is or is not needed. "
+            "Use simple, compassionate language, focusing on the patient’s emotional state, "
+            "symptoms, and potential benefits of counseling or therapy. "
+            "If not required, clearly write 'Not required in this case' with explanation."
+        ),
+    )
+    need_legal_help: str = Field(
+        ...,
+        description=(
+            "Clearly state 'Yes, legal help is required under Indian law because…' "
+            "or 'No, legal help is not required because…'. "
+            "Provide reasoning in 2–4 sentences."
+        ),
+    )
+    legal_reason: str = Field(
+        ...,
+        description=(
+            "Explain in detail (4–6 sentences) why legal help is or is not needed. "
+            "If required, mention relevant Indian laws (e.g., Domestic Violence Act, IPC sections) "
+            "in simple, supportive terms. "
+            "If not required, clearly write 'Not required in this case' with explanation."
+        ),
+    )
+    urgency_level: str = Field(
+        ...,
+        description=(
+            "Categorize urgency as 'low', 'moderate', or 'high'. "
+            "Then provide a short justification (2–3 sentences) "
+            "explaining why this urgency level was chosen."
+        ),
+    )
 
 
 def analyze_patient_needs(transcript: str):
@@ -117,13 +168,15 @@ def translate_document(
     """
 
     try:
-        # Create a simple Pydantic model for translation
+        print("language:", target_language)
+
         class TranslatedDocument(BaseModel):
             need_mental_health: str
             mental_health_reason: str
             need_legal_help: str
             legal_reason: str
             urgency_level: str
+            treatment_plan: str
 
         translation_model = generate_llm(TranslatedDocument)
         translated_response = translation_model.invoke(translation_prompt)
@@ -132,5 +185,4 @@ def translate_document(
 
     except Exception as e:
         print(f"[ERROR] Translation failed: {str(e)}")
-        # Return original object if translation fails
         return {**json_object, "translation_error": str(e)}

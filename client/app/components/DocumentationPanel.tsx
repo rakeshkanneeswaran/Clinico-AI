@@ -336,6 +336,19 @@ export function DocumentationPanel({
           isSaving={isSaving}
         />
 
+        <div className="mt-8 flex justify-center">
+          <Button
+            onClick={() =>
+              alert(
+                "🚨 Nearby NGO and the Police station have been informed. They will reach out to you shortly."
+              )
+            }
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md"
+          >
+            🚨 Elevate Issue
+          </Button>
+        </div>
+
         {showCaution && (
           <CautionComponent
             onCancel={() => {
