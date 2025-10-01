@@ -24,7 +24,7 @@ import uvicorn
 from cofig import server_config
 from service.transcription_service import transcribeS3Audio
 from core.model.llm_schemas import create_dynamic_model
-from core.document_generator.custom_document_generator import generate_custom_document
+from agents.document_agent.document_agent import invoke_document_agent
 from agents.chat_agent.chat_agent import invoke_chat_agent
 
 
@@ -160,7 +160,8 @@ def handle_custom_document_generation(document_data: DocumentData):
         )
 
         # Generate the document using the transcript and model
-        document = generate_custom_document(
+
+        document = invoke_document_agent(
             transcript, custom_model, document_type, doctor_suggestions
         )
 
