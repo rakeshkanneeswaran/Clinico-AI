@@ -4,7 +4,6 @@ import { SupabaseService } from './services';
 
 dotenv.config();
 
-// Initialize Fastify
 const app = fastify({ logger: true });
 
 // Routes

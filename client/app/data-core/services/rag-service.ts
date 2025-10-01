@@ -12,19 +12,6 @@ export class RAGService {
     }
 
     static async askQuestion(query: string, sessionId?: string): Promise<{ status: string; answer: string }> {
-        // First call to similarity search
-        const response = await fetch(`${process.env.RAG_API_URL}/api/similarity-search/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query, sessionId }),
-        });
-
-        const data = await response.json() as { status: string; data: string[] };
-        const contexts = data.data;
-        console.log("[INFO] 🧠 Contexts retrieved:", contexts);
-
         // Second call to generate answer
         const response2 = await fetch(`${process.env.AI_URL}/api/generate-answer`, {
             method: 'POST',
@@ -34,7 +21,7 @@ export class RAGService {
             },
             body: JSON.stringify({
                 query: query,
-                contexts: contexts
+                session_id: sessionId
             }),
         });
 
