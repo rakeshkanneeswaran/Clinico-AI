@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { generateUploadUrl } from "./action";
+import {
+  useState,
+  useRef,
+  useEffect,
+  Suspense,
+  Dispatch,
+  SetStateAction,
+  use,
+} from "react";
 import Recorder from "recorder-js";
 import { Button } from "@/components/ui/button";
-import { generateTranscription, getTranscriptBySession } from "./action";
-import { Dispatch, SetStateAction } from "react";
-import { useSearchParams } from "next/navigation";
-import { PatientForm } from "./PatientForm";
 import {
   X,
   Mic,
@@ -17,13 +20,14 @@ import {
   Download,
   User,
 } from "lucide-react";
-import { Suspense } from "react";
+import { PatientForm } from "./PatientForm";
+import { useSearchParams } from "next/navigation";
+import { getTranscriptBySession } from "./action";
 
 interface MedicalHeaderProps {
   isRecording: boolean;
   onToggleRecording: () => void;
   recordingTime?: string;
-  maxSizeInMB?: number;
   onClose: () => void;
   setTranscription: Dispatch<SetStateAction<string>>;
 }
@@ -32,112 +36,123 @@ export function MedicalHeader({
   isRecording,
   onToggleRecording,
   recordingTime = "00:45",
-  maxSizeInMB = 100,
   onClose,
   setTranscription,
 }: MedicalHeaderProps) {
   const colors = {
     primary: "#3b82f6",
-    secondary: "#000000",
     accent: "#10b981",
     danger: "#ef4444",
-    badge: "#6366f1",
     recordingBg: "#fef2f2",
   };
 
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showPatientForm, setShowPatientForm] = useState(false);
   const recorderRef = useRef<Recorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationIdRef = useRef<number | null>(null);
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [showPatientForm, setShowPatientForm] = useState(false);
   const searchParams = useSearchParams();
   const session = searchParams.get("session");
 
   useEffect(() => {
     if (session) {
-      getTranscriptBySession({ sessionId: session }).then((transcript) => {
+      (async () => {
+        const transcript = await getTranscriptBySession({ sessionId: session });
         if (transcript) {
           setTranscription(transcript);
         }
-      });
+      })();
     }
   }, [session, setTranscription]);
 
-  const validateFile = (file: File): boolean => {
-    if (
-      !file.type.includes("audio/wav") &&
-      !file.name.toLowerCase().endsWith(".wav")
-    ) {
-      setErrorMessage("Please upload a WAV audio file.");
-      return false;
-    }
+  const ASSEMBLYAI_API_KEY = "ab7aee9937fc413985897d7d96b8c3f1"; // ⚠️ keep secure (move to backend later)
 
-    const fileSizeInMB = file.size / (1024 * 1024);
-    if (fileSizeInMB > maxSizeInMB) {
-      setErrorMessage(`File size must be less than ${maxSizeInMB}MB.`);
-      return false;
-    }
+  /** ----------------- AssemblyAI Integration ----------------- **/
 
-    setErrorMessage(null);
-    return true;
+  const uploadToAssemblyAI = async (audioBlob: Blob): Promise<string> => {
+    const response = await fetch("https://api.assemblyai.com/v2/upload", {
+      method: "POST",
+      headers: { authorization: ASSEMBLYAI_API_KEY },
+      body: audioBlob,
+    });
+
+    const data = await response.json();
+    if (!data.upload_url)
+      throw new Error("Failed to upload audio to AssemblyAI");
+    return data.upload_url;
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!validateFile(file)) return;
+  const createTranscription = async (uploadUrl: string): Promise<string> => {
+    const response = await fetch("https://api.assemblyai.com/v2/transcript", {
+      method: "POST",
+      headers: {
+        authorization: ASSEMBLYAI_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        audio_url: uploadUrl,
+        speech_model: "universal",
+      }),
+    });
 
+    const data = await response.json();
+    if (!data.id) throw new Error("Failed to create transcription job");
+    return data.id;
+  };
+
+  const pollTranscription = async (transcriptId: string): Promise<string> => {
+    const pollingUrl = `https://api.assemblyai.com/v2/transcript/${transcriptId}`;
+
+    while (true) {
+      const res = await fetch(pollingUrl, {
+        headers: { authorization: ASSEMBLYAI_API_KEY },
+      });
+      const data = await res.json();
+
+      if (data.status === "completed") return data.text;
+      if (data.status === "error") throw new Error(data.error);
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  };
+
+  const handleTranscription = async (audioBlob: Blob) => {
     setIsUploading(true);
-    setUploadProgress(0);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setUploadProgress(25);
 
     try {
-      // 1️⃣ Get a presigned URL from server
-      const presignedUrl = await generateUploadUrl(file.type);
+      // 1️⃣ Upload directly to AssemblyAI
+      const uploadUrl = await uploadToAssemblyAI(audioBlob);
+      setUploadProgress(50);
 
-      // 2️⃣ Upload file directly to S3
-      await fetch(presignedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
-        body: file,
-      });
+      // 2️⃣ Create transcription
+      const transcriptId = await createTranscription(uploadUrl);
+      setUploadProgress(75);
 
-      // 3️⃣ Extract file key from URL for later use
-      const fileKey = new URL(presignedUrl).pathname.substring(1);
+      // 3️⃣ Poll until ready
+      const text = await pollTranscription(transcriptId);
+      setTranscription(text);
 
-      // 4️⃣ Transcription step
-      const transcriptionResponse = await generateTranscription(
-        fileKey,
-        session as string
-      );
-      setTranscription(transcriptionResponse.transcript);
-
-      setSuccessMessage(`${file.name} uploaded successfully!`);
       setUploadProgress(100);
+      setSuccessMessage("Transcription complete!");
       setTimeout(() => onClose(), 1500);
-    } catch (error) {
-      console.error("Upload error:", error);
-      setErrorMessage("Error uploading file.");
+    } catch (err: any) {
+      console.error("Transcription failed:", err);
+      setErrorMessage(err.message || "Error transcribing audio.");
     } finally {
       setIsUploading(false);
-      setTimeout(() => setUploadProgress(0), 1000);
+      setTimeout(() => setUploadProgress(0), 1500);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
-    }
-  };
+  /** ----------------- Recording Logic ----------------- **/
 
   const drawWaveform = () => {
     const canvas = canvasRef.current;
@@ -152,7 +167,6 @@ export function MedicalHeader({
 
     const draw = () => {
       animationIdRef.current = requestAnimationFrame(draw);
-
       analyser.getByteTimeDomainData(dataArray);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -207,15 +221,22 @@ export function MedicalHeader({
     setAudioURL(url);
 
     if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+
+    // ✅ Directly send to AssemblyAI
+    await handleTranscription(blob);
   };
 
   const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+    if (isRecording) stopRecording();
+    else startRecording();
     onToggleRecording();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleTranscription(file);
+    }
   };
 
   return (
@@ -306,7 +327,6 @@ export function MedicalHeader({
                 </a>
               )}
 
-              {/* Audio Waveform Canvas */}
               {isRecording && (
                 <canvas
                   ref={canvasRef}
