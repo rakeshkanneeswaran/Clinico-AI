@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  nextjs-app:
+    build: .
+    container_name: clinico-ai-nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      AWS_ACCESS_KEY_ID: AKIAZOZQFQWQVCCSFE6D
+      AWS_SECRET_ACCESS_KEY: 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
+      AWS_S3_BUCKET_NAME: clinic-scribe-bucket
+      AWS_REGION: us-east-1
+      AI_URL: http://host.docker.internal:8000
+      RAG_API_URL: http://host.docker.internal:3001
+      CLINICO_AI_API_KEY: your_ai_api_key_here
+      ASSEMBLYAI_API_KEY: b7aee9937fc413985897d7d96b8c3f1
+      DATABASE_URL: postgres://avnadmin:AVNS_D9J5GTT-US4HO0vdanu@pg-clinico-ai-rakikanneeswaran21.l.aivencloud.com:27869/defaultdb?sslmode=require
+    restart: unless-stopped
+
+networks:
+  default:
+    name: clinic_network

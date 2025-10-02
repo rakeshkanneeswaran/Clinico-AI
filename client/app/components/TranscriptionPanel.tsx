@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button";
 import { saveTranscript } from "./action";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Sparkles } from "lucide-react";
 
 interface TranscriptionPanelProps {
   transcription: string;
   onTranscriptionChange: (value: string) => void;
   isRecording?: boolean;
-  onDeepAnalysis?: () => void; // Add this prop
-  isAnalyzing?: boolean; // Add this prop
+  onDeepAnalysis?: () => void;
+  isAnalyzing?: boolean;
 }
 
 export function TranscriptionPanel({
@@ -143,24 +142,6 @@ Patient: Yes, black stools and dizziness.`;
               <>
                 <Save className="h-4 w-4" />
                 Save Transcript
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={onDeepAnalysis}
-            variant="outline"
-            className="gap-2 border-primary text-primary hover:bg-primary/10"
-            disabled={!transcription || isAnalyzing}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Deep Analysis
               </>
             )}
           </Button>

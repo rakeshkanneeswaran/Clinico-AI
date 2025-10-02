@@ -7,7 +7,6 @@ import {
   Suspense,
   Dispatch,
   SetStateAction,
-  use,
 } from "react";
 import Recorder from "recorder-js";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ import {
 } from "lucide-react";
 import { PatientForm } from "./PatientForm";
 import { useSearchParams } from "next/navigation";
-import { getTranscriptBySession } from "./action";
+import { getTranscriptBySession, transcribeAudio } from "./action";
 
 interface MedicalHeaderProps {
   isRecording: boolean;
@@ -75,52 +74,6 @@ export function MedicalHeader({
 
   /** ----------------- AssemblyAI Integration ----------------- **/
 
-  const uploadToAssemblyAI = async (audioBlob: Blob): Promise<string> => {
-    const response = await fetch("https://api.assemblyai.com/v2/upload", {
-      method: "POST",
-      headers: { authorization: ASSEMBLYAI_API_KEY },
-      body: audioBlob,
-    });
-
-    const data = await response.json();
-    if (!data.upload_url)
-      throw new Error("Failed to upload audio to AssemblyAI");
-    return data.upload_url;
-  };
-
-  const createTranscription = async (uploadUrl: string): Promise<string> => {
-    const response = await fetch("https://api.assemblyai.com/v2/transcript", {
-      method: "POST",
-      headers: {
-        authorization: ASSEMBLYAI_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        audio_url: uploadUrl,
-        speech_model: "universal",
-      }),
-    });
-
-    const data = await response.json();
-    if (!data.id) throw new Error("Failed to create transcription job");
-    return data.id;
-  };
-
-  const pollTranscription = async (transcriptId: string): Promise<string> => {
-    const pollingUrl = `https://api.assemblyai.com/v2/transcript/${transcriptId}`;
-
-    while (true) {
-      const res = await fetch(pollingUrl, {
-        headers: { authorization: ASSEMBLYAI_API_KEY },
-      });
-      const data = await res.json();
-
-      if (data.status === "completed") return data.text;
-      if (data.status === "error") throw new Error(data.error);
-      await new Promise((r) => setTimeout(r, 3000));
-    }
-  };
-
   const handleTranscription = async (audioBlob: Blob) => {
     setIsUploading(true);
     setErrorMessage(null);
@@ -128,24 +81,25 @@ export function MedicalHeader({
     setUploadProgress(25);
 
     try {
-      // 1️⃣ Upload directly to AssemblyAI
-      const uploadUrl = await uploadToAssemblyAI(audioBlob);
-      setUploadProgress(50);
+      // Convert blob to File (Server Actions require File type)
+      const file = new File([audioBlob], "recording.wav", {
+        type: "audio/wav",
+      });
 
-      // 2️⃣ Create transcription
-      const transcriptId = await createTranscription(uploadUrl);
-      setUploadProgress(75);
-
-      // 3️⃣ Poll until ready
-      const text = await pollTranscription(transcriptId);
-      setTranscription(text);
-
+      // 1️⃣ Call the server action
+      const result = await transcribeAudio(file);
       setUploadProgress(100);
-      setSuccessMessage("Transcription complete!");
-      setTimeout(() => onClose(), 1500);
-    } catch (err: any) {
-      console.error("Transcription failed:", err);
-      setErrorMessage(err.message || "Error transcribing audio.");
+
+      if (result.success) {
+        setTranscription(result.text || "");
+        setSuccessMessage("Transcription complete!");
+        setTimeout(() => onClose(), 1500);
+      } else {
+        setErrorMessage(result.error || "Failed to transcribe.");
+      }
+    } catch (err) {
+      console.error("Error calling server action:", err);
+      setErrorMessage("Something went wrong.");
     } finally {
       setIsUploading(false);
       setTimeout(() => setUploadProgress(0), 1500);

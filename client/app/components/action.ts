@@ -1,5 +1,4 @@
 "use server";
-import { S3Service } from "../data-core/services/s3-service";
 import { DocumentService } from "@/data-core/services/document-service";
 import { SessionService } from "@/data-core/services/session-service";
 import { PatientService } from "@/data-core/services/patient-service";
@@ -24,17 +23,71 @@ async function validateSession() {
     return user;
 }
 
-export async function uploadedFileToS3(file: File): Promise<string> {
-    await validateSession(); // Validate session first
 
-    if (!file) {
-        throw new Error("No file selected");
+export async function transcribeAudio(file: File) {
+    const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY!; // Move the key to .env.local
+
+    try {
+        // 1️⃣ Upload to AssemblyAI
+        const uploadResponse = await fetch("https://api.assemblyai.com/v2/upload", {
+            method: "POST",
+            headers: {
+                authorization: ASSEMBLYAI_API_KEY,
+            },
+            body: file,
+        });
+
+        const uploadData = await uploadResponse.json();
+        if (!uploadData.upload_url) {
+            throw new Error("Failed to upload audio to AssemblyAI");
+        }
+
+        // 2️⃣ Create transcription
+        const transcriptResponse = await fetch("https://api.assemblyai.com/v2/transcript", {
+            method: "POST",
+            headers: {
+                authorization: ASSEMBLYAI_API_KEY,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                audio_url: uploadData.upload_url,
+                speech_model: "universal",
+            }),
+        });
+
+        const transcriptData = await transcriptResponse.json();
+        if (!transcriptData.id) throw new Error("Failed to create transcription job");
+
+        // 3️⃣ Poll for completion
+        let text: string | null = null;
+        while (true) {
+            const pollingResponse = await fetch(
+                `https://api.assemblyai.com/v2/transcript/${transcriptData.id}`,
+                {
+                    headers: { authorization: ASSEMBLYAI_API_KEY },
+                }
+            );
+            const pollingData = await pollingResponse.json();
+
+            if (pollingData.status === "completed") {
+                text = pollingData.text;
+                break;
+            }
+            if (pollingData.status === "error") {
+                throw new Error(pollingData.error);
+            }
+
+            await new Promise((r) => setTimeout(r, 3000));
+        }
+
+        return { success: true, text };
+    } catch (error) {
+        console.error("Transcription failed:", error);
+        return { success: false, error: "Error transcribing audio." };
     }
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const fileKey = await S3Service.uploadFile(buffer);
-    return fileKey;
 }
+
+
 
 export async function generateTranscription(s3FileName: string, sessionId: string): Promise<{ s3_file_name: string; transcript: string; message: string }> {
     await validateSession();
@@ -127,15 +180,6 @@ export async function askQuestion(query: string, sessionId: string): Promise<{ s
     return response;
 }
 
-export async function generateUploadUrl(fileType: string): Promise<string> {
-    await validateSession();
-
-    if (!fileType) {
-        throw new Error("File type not provided");
-    }
-    const response = await S3Service.generateUploadUrl(fileType);
-    return response;
-}
 
 
 export async function getSessionDocumentById({ sessionId, sessionDocumentId }: {
