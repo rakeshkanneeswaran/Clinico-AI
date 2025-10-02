@@ -22,7 +22,7 @@ import uvicorn
 # 🔹 Internal / Application Imports
 # -------------------------------
 from cofig import server_config
-from service.transcription_service import transcribeS3Audio
+
 from core.model.llm_schemas import create_dynamic_model
 from agents.document_agent.document_agent import invoke_document_agent
 from agents.chat_agent.chat_agent import invoke_chat_agent
@@ -114,30 +114,6 @@ async def log_incoming_request(request: Request, call_next):
 # ============================================================
 # 🧠 API Endpoints
 # ============================================================
-
-
-@app.post("/api/generate-transcription")
-def handle_transcription(user_data: UserData):
-    """
-    Transcribes an audio file from an S3 path into text.
-    """
-    try:
-        s3_file_name = user_data.s3_file_path
-        print(f"[INFO] 🎧 Transcribing audio file from S3: {s3_file_name}")
-
-        transcript = transcribeS3Audio(s3_file_name)
-
-        print("[INFO] ✅ Transcription completed successfully.")
-        return {
-            "status": "success",
-            "message": "File transcribed successfully.",
-            "s3_file_name": s3_file_name,
-            "transcript": transcript,
-        }
-
-    except Exception as e:
-        print(f"[ERROR] ❌ Transcription failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
 
 @app.post("/api/generate-custom-document")

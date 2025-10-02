@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  clinico-ai-server:
+    build: .
+    container_name: clinico-ai-ai-server
+    ports:
+      - "8000:8000"
+    environment:
+      HF_TOKEN: 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
+      AWS_ACCESS_KEY_ID: AKIAZOZQFQWQVCCSFE6D
+      AWS_SECRET_ACCESS_KEY: vsRlbLv3W+K2KTPVYJEDe7pazlgbcWSY4j5tbtHS
+      GROQ_API_KEY: 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
+      CLINICO_AI_API_KEY: your_ai_api_key_here
+      RAG_API_URL: http://host.docker.internal:3001
+      LANGSMITH_TRACING: "true"
+      LANGSMITH_ENDPOINT: https://api.smith.langchain.com
+      LANGSMITH_API_KEY: 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
+      LANGSMITH_PROJECT: pr-blank-emu-3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

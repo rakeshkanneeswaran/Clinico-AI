@@ -1,30 +1,40 @@
-# Use the official Python image as a base
-FROM python:3.11-slim
+# ============================================================
+# 🏥 Clinico AI Server — FastAPI Backend (Python 3.11)
+# ============================================================
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# ------------------------------
+# 1️⃣ Base Image
+# ------------------------------
+FROM python:3.11-slim AS base
 
-# Set work directory
+# Prevent Python from writing .pyc files and using output buffering
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy project files
-COPY pyproject.toml  ./
-
-# Install Python dependencies
+# ------------------------------
+# 2️⃣ Install Poetry and System Dependencies
+# ------------------------------
 RUN pip install --upgrade pip && \
-    pip install poetry && \
-    poetry config virtualenvs.create false && \
-    poetry install --no-root --no-interaction --no-ansi
+    pip install poetry
 
-# Copy the rest of the project
+# Copy only dependency files first (for caching)
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies via Poetry
+RUN poetry install
+
+# ------------------------------
+# 3️⃣ Copy Source Code
+# ------------------------------
 COPY . .
 
-# Command to run the application (modify as needed)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ------------------------------
+# 4️⃣ Expose Port and Run App
+# ------------------------------
+EXPOSE 8000
 
+# Run the FastAPI app with Uvicorn
+CMD ["poetry", "run", "python", "main.py"]
