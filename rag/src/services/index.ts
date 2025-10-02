@@ -6,7 +6,7 @@ dotenv.config();
 
 export class SupabaseService {
     private static embeddings = new OllamaEmbeddings({
-        baseUrl: "http://localhost:11434",
+        baseUrl: process.env.OLLAMA_API_URL || 'http://localhost:11434',
         model: "nomic-embed-text",
     });
 
@@ -52,7 +52,7 @@ export class SupabaseService {
     static async findSimilarConversations(
         query: string,
         sessionId?: string,
-        limit: number = 3
+        limit: number = 10
     ): Promise<{ status: string; data: string[] }> {
         const queryEmbedding = await this.embeddings.embedQuery(query);
 

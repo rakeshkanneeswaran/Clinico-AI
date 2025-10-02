@@ -1,12 +1,11 @@
 import fastify from 'fastify';
+import cors from '@fastify/cors';
 import * as dotenv from 'dotenv';
 import { SupabaseService } from './services';
 
 dotenv.config();
 
 const app = fastify({ logger: true });
-
-// Routes
 app.post('/api/create/vectorstore/', async (request, reply) => {
     try {
         const { sessionId, transcript } = request.body as { sessionId: string; transcript: string };
@@ -51,9 +50,14 @@ app.post('/api/delete-all-data-from-vectorstore/', async (request, reply) => {
     }
 });
 
-// Start server
+
 const start = async () => {
     try {
+        await app.register(cors, {
+            origin: '*', // Allow all origins
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+        });
         await app.listen({ port: 3001, host: '0.0.0.0' });
         console.log('Server running on http://localhost:3001');
     } catch (err) {
@@ -63,3 +67,7 @@ const start = async () => {
 };
 
 start();
+
+
+
+

@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  clinico-ai-rag:
+    build: .
+    image: clinico-ai-rag
+    container_name: clinico-ai-rag
+    ports:
+      - "3001:3001"
+    environment:
+      SUPABASE_URL: "https://wdckkdfvfnfntfpgmnsd.supabase.co"
+      SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkY2trZGZ2Zm5mbnRmcGdtbnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMjE2NTcsImV4cCI6MjA3NDg5NzY1N30.VO_XaaRQTlgNAl0wdnzpPgd2qSAuw9PO8n_kBLT1Yqs"
+      CLINICO_AI_API_KEY: "your_ai_api_key_here"
+      HUGGINGFACE_API_KEY: "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"
+      database_password: "8RcyUEMmEz6XHtEp"
+      OLLAMA_API_URL: "http://ollama:11434"
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama
+    container_name: clinico-ai-rag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull nomic-embed-text && wait"]
+    restart: unless-stopped
+
+volumes:
+  ollama:
