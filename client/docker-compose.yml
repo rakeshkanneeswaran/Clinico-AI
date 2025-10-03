@@ -14,7 +14,7 @@ services:
       AI_URL: http://host.docker.internal:8000
       RAG_API_URL: http://host.docker.internal:3001
       CLINICO_AI_API_KEY: your_ai_api_key_here
-      ASSEMBLYAI_API_KEY: b7aee9937fc413985897d7d96b8c3f1
+      ASSEMBLYAI_API_KEY: ab7aee9937fc413985897d7d96b8c3f1
       DATABASE_URL: postgres://avnadmin:AVNS_D9J5GTT-US4HO0vdanu@pg-clinico-ai-rakikanneeswaran21.l.aivencloud.com:27869/defaultdb?sslmode=require
     restart: unless-stopped
 

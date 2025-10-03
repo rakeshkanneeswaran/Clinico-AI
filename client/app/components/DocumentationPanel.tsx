@@ -417,18 +417,6 @@ export function DocumentationPanel({
 
             {/* Doctor Suggestions Input */}
             <div className="mb-6">
-              <label className="block text-md font-bold mb-2 text-foreground">
-                Provide suggestions to AI ? (optional)
-              </label>
-              <textarea
-                value={doctorSuggestions}
-                onChange={(e) => setDoctorSuggestions(e.target.value)}
-                placeholder="Add any special notes, recommendations, or instructions for the AI..."
-                className="w-full p-3 border rounded-lg text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                maxLength={1200} // hard limit in characters
-              />
-
               {/* Word Counter */}
               <div className="text-sm font-semibold text-foreground text-right mt-2 tracking-wide">
                 <div

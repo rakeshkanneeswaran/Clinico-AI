@@ -25,7 +25,8 @@ async function validateSession() {
 
 
 export async function transcribeAudio(file: File) {
-    const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY!; // Move the key to .env.local
+    const ASSEMBLYAI_API_KEY = process.env.ASSEMBLYAI_API_KEY!;
+    console.log("ASSEMBLYAI_API_KEY:", ASSEMBLYAI_API_KEY); // Debugging line
 
     try {
         // 1️⃣ Upload to AssemblyAI
